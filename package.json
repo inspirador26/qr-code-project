@@ -1,0 +1,20 @@
+{
+  "name": "qr_code_project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "bwip-js": "^4.7.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "qrcode": "^1.5.4",
+    "uuid": "^8.3.2"
+  }
+}
