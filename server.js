@@ -19,7 +19,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // ------------ Core config ------------
-const HOST = 'http://192.168.100.7:3000';
+const PORT = Number(process.env.PORT || 3000);
+const LISTEN_HOST = process.env.LISTEN_HOST || '127.0.0.1';
+const HOST = process.env.HOST || `http://localhost:${PORT}`;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-do-not-use';
 
 // ------------ Google Wallet ------------
@@ -245,8 +247,7 @@ app.post('/admin/offer', (req, res) => {
 // ------------ Health & listen ------------
 app.get('/ping', (req, res) => res.send('pong'));
 
-const port = 3000;
-app.listen(port, '0.0.0.0', () => console.log(`Up on ${HOST}`));
+app.listen(PORT, LISTEN_HOST, () => console.log(`Up on ${HOST}`));
 
 // Admin shortcuts:
 // http://192.168.100.7:3000/admin/qr/offer-abc
