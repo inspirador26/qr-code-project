@@ -14,6 +14,21 @@ Entry format:
 
 ---
 
+## 2026-08-22 — Claude (with Justin), part 2
+
+- Set up a branching model: `main` (stable) ← `staging` (integration) ←
+  `feature/*` branches, merged back into `staging` rather than `main`.
+- Added `.claude/skills/qr-coupon-flow/SKILL.md` and
+  `.claude/skills/google-wallet/SKILL.md`, joining `dev-environment` as the
+  first three living per-feature architecture docs (mechanics, known
+  problems/solutions, TODOs) — distilled from `server.js` plus what today's
+  session actually diagnosed. These are meant to be updated in place as
+  understanding changes, unlike this changelog which stays append-only
+  history.
+- Added `CLAUDE.md` with a standing policy: Claude does not run `git commit`,
+  open PRs, or `git push` unless explicitly asked to do so in that moment —
+  Justin runs those himself by default.
+
 ## 2026-08-22 — Claude (with Justin)
 
 - Resumed the 2026-08-07 session, which had ended mid-fix without confirming the result. Started the server (`LISTEN_HOST=0.0.0.0`, LAN IP had changed again to `192.168.0.162`), confirmed the pending `server.js` fix (dropping `reviewStatus: 'underReview'` from the Google Wallet save JWT — see 2026-08-07 entry) actually resolves the "unable to load this pass" error: Justin scanned a live QR and reached the wallet save step successfully.
