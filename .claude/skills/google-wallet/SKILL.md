@@ -1,12 +1,37 @@
 ---
 name: google-wallet
-description: How Google Wallet save-to-wallet integration works in this app -- OfferClass/OfferObject structure, the save JWT, the Issuer account, and key rotation. Load this when touching /wallet/google/:codeId, wallet-sa.json, the [TEST ONLY] banner, or anything IAM/GCP related to the wallet service account.
+description: How Google Wallet save-to-wallet integration works in this app (both the Django backend and the legacy Node POC) -- OfferClass/OfferObject structure, the save JWT, the Issuer account, and key rotation. Load this when touching backend/wallet/, /wallet/google/:codeId, wallet-sa.json, the [TEST ONLY] banner, or anything IAM/GCP related to the wallet service account.
 ---
 
 # Google Wallet Integration
 
-Living architecture doc. See `qr-coupon-flow` for how a code gets here and
+Living architecture doc. See `qr-coupon-flow` for how a code gets here (Node
+POC) / `tcb-integration` for the equivalent Django flow, and
 `dev-environment` for local env/credential setup mechanics.
+
+**Ported to Django** at `backend/wallet/service.py` +
+`backend/wallet/views.py` (`GET /wallet/google/<clip_id>/`) on 2026-08-22 —
+faithful port of the mechanics below, with two real changes forced by the
+new multi-tenant schema (no `merchants` table anymore):
+- **OfferClass scope**: the new schema's `OfferChannelConfig` is FK'd to
+  `Offer`, not `Tenant` — but a wallet class should still be one-per-CPG,
+  reused across all their offers (matching the original one-per-merchant
+  intent). Resolved by deriving the class id **deterministically** from
+  `tenant.id` (`{ISSUER_ID}.tenant_{tenant.id}`) rather than doing a
+  reuse-lookup — same class id falls out naturally for every offer that
+  tenant has.
+- **Barcode value — still an open, unconfirmed decision** (not something
+  ported/changed unilaterally): should the wallet barcode switch from
+  CODE_128/raw clip id to the AI(8112) serialized data string for
+  8112-enabled offers? Recommended yes eventually (a coupon having two
+  independently-live codes is bad for fraud/dedup), but it's a real
+  redemption-semantics change. Currently still CODE_128 + raw `CouponClip.id`,
+  matching the Node POC's behavior exactly.
+
+The model/flow below describes `server.js` (Node POC) specifically — the
+Django port's mechanics are the same, just Python/`PyJWT` instead of
+`jsonwebtoken`, and see `backend/wallet/service.py`'s own docstring for the
+authoritative current version.
 
 ## Model
 
@@ -62,9 +87,16 @@ stored copy of that class — which is the source of the bug below.
 ## TODO
 
 - Apple Wallet (`/wallet/apple/:codeId`) is a stub — returns plain text, no
-  `.pkpass` generation. Not started.
+  `.pkpass` generation. Not started in either the Node POC or Django.
 - Confirm how/where the merchant `OfferClass`es actually get their initial
   `approved` status set today (doesn't appear to happen in `server.js`) —
-  worth documenting the real provisioning step once we trace it.
-- `ISSUER_NAME`/`ISSUER_ID` are hardcoded constants; revisit if this app ever
-  needs to support more than one issuer account.
+  worth documenting the real provisioning step once we trace it. Same
+  question applies to Django's `tenant`-derived classes.
+- `ISSUER_NAME`/`ISSUER_ID` are hardcoded constants in `server.js`; in
+  Django they're `settings.GOOGLE_WALLET_ISSUER_ID`/`ISSUER_NAME` (env-driven
+  already) — but still a single platform-wide issuer, revisit if this app
+  ever needs to support more than one.
+- **Decide the barcode-value question** (CODE_128/raw clip id vs. the
+  AI(8112) serialized data string) — see the 2026-08-22 note above. Blocks
+  nothing today but should be resolved before 8112 barcodes and wallet
+  barcodes risk representing the same coupon two different ways.

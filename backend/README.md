@@ -42,7 +42,10 @@ python manage.py runserver
 Then:
 - `http://127.0.0.1:8000/` — health check (no consumer-facing pages exist
   yet — see "Current status" below)
-- `http://127.0.0.1:8000/admin/` — full Django admin, all models registered
+- `http://127.0.0.1:8000/admin/` — full Django admin, all models registered,
+  each with a short description of what it's for right on the index page
+  (see `config/admin.py` if you need to add/update one — it's a lookup dict,
+  not per-model boilerplate)
 
 **Postgres port note**: `docker-compose.yml` maps the container to host port
 **5433**, not the default 5432. This is deliberate — if your machine already

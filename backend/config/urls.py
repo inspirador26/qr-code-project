@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import include, path
 
+from . import admin as admin_descriptions  # noqa: F401 — applies the admin app-list description patch on import
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),

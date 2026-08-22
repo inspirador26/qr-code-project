@@ -14,6 +14,61 @@ Entry format:
 
 ---
 
+## 2026-08-22 — Claude (with Justin), part 5
+
+- Walked Justin through every model currently registered in Django admin
+  (confirmed the actual live list via `admin.site._registry`, not just
+  grepping `admin.py` files — caught that a naive grep would've included
+  inactive `venv` packages like `flatpages`/`redirects` that aren't even in
+  `INSTALLED_APPS`). Then added those same descriptions as real in-admin
+  help text: `config/admin.py` patches `admin.site.get_app_list` with a
+  `MODEL_DESCRIPTIONS` lookup dict (covers our own models and the
+  third-party ones — allauth, oauth2_provider, sites, auth — since none of
+  those have admin classes we control to attach a description to directly),
+  and `templates/admin/app_list.html` overrides Django's own template to
+  render it under each model name on the `/admin/` index page. Verified via
+  a logged-in test client hitting `/admin/` directly (not just eyeballing
+  HTML) that descriptions actually render; full test suite (23) still
+  passes.
+
+## 2026-08-22 — Claude (with Justin), part 4
+
+- Committed and merged the Django backend foundation: branched
+  `feature/django-backend-foundation` off `staging`, committed everything
+  from parts 1-3 below (backend/, updated `LLM_HANDOFF.md`, this file, plus
+  `project-docs/AI (8112) Coupon Data SpecificationsV1.1.pdf` which had been
+  sitting untracked), merged into `staging`. Caught and removed a stray
+  0-byte `smoke_test.sqlite3` before staging — broadened
+  `backend/.gitignore`'s `db.sqlite3` to `*.sqlite3` so this class of file
+  can't sneak into a commit again.
+- Wrote `backend/README.md` — the primary practical handoff doc (setup,
+  architecture-by-app, current status, what's not built yet). Added a
+  superseded-notice at the top of `LLM_HANDOFF.md` pointing to it, since
+  that file previously described only the Node POC with no indication a
+  rewrite had happened.
+- Justin pushed `staging` and `feature/django-backend-foundation` to
+  `origin` (GitHub) — first time either has existed remotely; previously
+  local-only. Cleaned up local branches: `feature/django-backend-foundation`,
+  `feature/skills-qr-flow-and-wallet`, and `feature/wallet-save-fix-and-docs`
+  were all fully merged into `staging` (confirmed via `git branch --merged`
+  before deleting) and never pushed anywhere, so `git branch -d` was safe.
+  Local branch list is now just `main`/`staging`. The remote
+  `feature/django-backend-foundation` branch was deliberately left alone
+  (redundant now, but deleting a remote branch is more consequential —
+  Justin's call, not made this session).
+- Drafted a getting-started message for Justin to send his colleague
+  (repo/branch, `backend/README.md` pointer, exact setup commands, note that
+  no real credentials are needed to get a working local instance).
+- Added two new skills for the Django backend's new domain logic:
+  `tcb-integration` (the TCB client seam, mock vs. real, GS1 8112 encoding,
+  known gotchas including the pyzint failure and the `@transaction.atomic`
+  bug) and `tenancy-and-auth` (tenant isolation mechanism, invite-only SSO,
+  the `_EmailUserManager` gotcha). Updated `dev-environment` with Django
+  boot instructions and the Postgres-port gotcha; added superseded-pointers
+  to `google-wallet` and `qr-coupon-flow` (both still Node-POC-only content)
+  noting the Django equivalents, plus documented the wallet class-id and
+  barcode-value decisions from the port in `google-wallet`'s TODO.
+
 ## 2026-08-22 — Claude (with Justin), part 3
 
 - Big-picture planning session: reviewed the GS1 AI(8112) coupon spec

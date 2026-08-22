@@ -1,9 +1,20 @@
 ---
 name: qr-coupon-flow
-description: The merchant/offer/coupon lifecycle in this app -- how a QR code becomes a redeemable code and how it's structured in the DB. Load this when working on offer creation, QR generation, the scan/landing page, redemption, or the codes/offers/merchants schema.
+description: The legacy Node POC's merchant/offer/coupon lifecycle -- how a QR code becomes a redeemable code and how it's structured in the DB. For the active Django backend's equivalent (Offer/CouponClip/TCB deposit flow), see the tcb-integration skill instead. Load this one when working specifically on server.js, or comparing old vs. new behavior.
 ---
 
-# QR Coupon Flow
+# QR Coupon Flow (Node POC — superseded)
+
+**As of 2026-08-22, this describes the legacy Node/Express proof-of-concept
+only (`server.js` at the repo root).** Active development is the Django
+backend — see the `tcb-integration` skill for the real, GS1 AI(8112)-based
+equivalent of this flow (`Offer` → `CouponClip`, TCB deposit instead of a
+local `/redeem` endpoint, TCB as sole redemption authority instead of us).
+Keep this doc around as a reference for the old behavior — it's still useful
+for understanding *why* certain new-model decisions were made (e.g. "QR
+never encodes the coupon directly" carried forward as a design principle),
+but don't extend it as if `server.js` is still where new coupon-flow work
+goes.
 
 Living architecture doc for the core business flow. See `CHANGELOG.md` for
 session history and `dev-environment` for local setup.
