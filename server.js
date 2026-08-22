@@ -159,14 +159,14 @@ app.get('/wallet/google/:codeId', (req, res) => {
     aud: 'google',
     typ: 'savetoandroidpay',
     payload: {
-      // Class = merchant (chip shows "[TEST ONLY] <title>")
+      // Class = merchant. Omit reviewStatus: classes already exist server-side as
+      // 'approved', and a save JWT cannot downgrade an approved class.
       offerClasses: [{
         id: classId,
         issuerName: ISSUER_NAME,
         title: merchant.provider,                 // chip title (merchant name)
         provider: merchant.provider,
-        redemptionChannel: merchant.redemption_channel, // INSTORE | ONLINE | BOTH
-        reviewStatus: 'underReview'
+        redemptionChannel: merchant.redemption_channel // INSTORE | ONLINE | BOTH
       }],
       // Object = specific pass/code for that merchant
       offerObjects: [{

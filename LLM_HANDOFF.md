@@ -4,6 +4,14 @@
 
 ---
 
+# Changelog
+
+This is the standing brief. `CHANGELOG.md` is the running session-by-session log.
+
+**Any assistant (human or LLM) that makes a change in this repo should append an entry to `CHANGELOG.md` before ending the session.**
+
+---
+
 # Current Status
 
 The application has moved beyond a proof-of-concept.
@@ -198,7 +206,11 @@ Known Issues
 
 Google Wallet OfferClass metadata is cached.
 
-Google Wallet review status displays "[TEST ONLY]" until approved.
+Google Wallet passes display a "[TEST ONLY]" banner. This is governed by the
+Issuer account's own publish/review status in the Google Pay & Wallet Business
+Console — it is independent of each OfferClass's `reviewStatus` field, which is
+already `approved` for all seeded merchants. Getting rid of the banner requires
+completing Google's issuer-account review, not a code change.
 
 Apple Wallet has not yet been implemented.
 
