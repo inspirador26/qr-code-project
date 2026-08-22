@@ -14,6 +14,126 @@ Entry format:
 
 ---
 
+## 2026-08-22 — Claude (with Justin), part 3
+
+- Big-picture planning session: reviewed the GS1 AI(8112) coupon spec
+  (`project-docs/`) and TCB's real Developer Portal API docs
+  (`portal.thecouponbureau.org/developer/api_docs`), then wrote a full
+  architecture/foundation plan for the actual product — a multi-tenant
+  service distributing 8112 coupons for CPG clients via The Coupon Bureau,
+  not just this repo's single-merchant QR/wallet demo. Plan saved at
+  `C:\Users\Justin McMahon\.claude\plans\i-am-working-on-compressed-valiant.md`.
+- **Decided: the backend is being rewritten in Python/Django**, not
+  continued in Node/Express — `server.js` is kept only as a behavioral
+  reference during the port, not migrated in place. Also decided: Django
+  server-rendered UI (templates + htmx + Tailwind, no separate SPA), and
+  `libzint` (BSD-3-Clause) for barcode rendering rather than
+  `treepoem`/Ghostscript, which is AGPL-or-pay and would require an Artifex
+  commercial license for closed-source SaaS use — checked actual current
+  license terms for all of this rather than assuming.
+- Started the new project at `backend/` (Django, Python 3.13, venv). Scaffolded
+  10 apps per the plan (`tenancy`, `accounts`, `offers`, `coupons`,
+  `tcb_integration`, `gs1`, `wallet`, `reporting`, `api`, `internal`), a
+  settings package split into `base`/`dev`/`prod`, `docker-compose.yml`
+  (Postgres + Redis), and Celery app skeleton. Implemented `Tenant`/
+  `TenantMembership` and `User`/`UserIdentity`/`InternalOperator` models plus
+  `TenantContextMiddleware` (tenant selection is explicit, never inferred)
+  and an invite-only `django-allauth` social adapter. Verified the project
+  boots clean (system checks, migrations, `/` and `/admin/` both 200)
+  against a temporary SQLite DB. **Follow-up once Docker was started**: ran
+  the full stack against the real `docker-compose` Postgres container and
+  confirmed it end-to-end (migrations + `/` + `/admin/` all 200). Hit one
+  real environment gotcha: this machine already runs a **native Postgres
+  service on host port 5432**, separate from Docker, which was silently
+  winning the port and causing Django to authenticate against the wrong
+  instance. Fixed by remapping the container to host port **5433** in
+  `docker-compose.yml`/`DATABASE_URL` — the native instance wasn't touched.
+- Spiked `pyzint` for GS1 DataBar rendering and **it doesn't work**: GS1
+  element-string encoding fails (`Error 252: Data does not start with an
+  AI`) even for a control AI unrelated to 8112, and a malformed constructor
+  call segfaults the process rather than raising cleanly. Don't use it.
+- **Follow-up: spiked `zint-bindings` instead (PyPI `zint-bindings`, imports
+  as `zint`) and it works.** Has the `InputMode.GS1PARENS` flag `pyzint` was
+  missing, the `Symbology.DBAR_EXPSTK` constant (GS1 DataBar Expanded
+  Stacked), and in-memory PNG rendering (`BARCODE_MEMORY_FILE` +
+  `Symbol.memfile`, no temp files). Confirmed it renders a real TCB-example
+  serialized data string to a valid PNG with no human-readable text, and
+  that zint validates AI(8112)'s own VLI structure internally (a nice bonus
+  layer of validation). One gotcha: an unrelated PyPI package also literally
+  named `zint` (a ctypes wrapper needing a system `libzint` we don't have)
+  claims the same import name and will shadow `zint-bindings` if both get
+  installed — only `zint-bindings` should be a dependency.
+  Implemented and tested `backend/gs1/data_string.py` (VLI builder/parser
+  per the spec) and `backend/gs1/barcode.py` (the renderer) — 12 unit tests,
+  all passing. The parser test suite caught a real bug during this work: it
+  raised a bare `IndexError` on truncated input instead of a clean
+  `DataStringError`; fixed with a bounds-checked `take()` helper.
+- **Follow-up: implemented the full data model** across `offers`
+  (`TcbManufacturerLink`, `DistributionChannel`, `Offer`,
+  `OfferChannelConfig`), `coupons` (`CouponClip`, `CouponFetchCode`),
+  `tcb_integration` (`TcbSyncLog` + a `TcbSyncLogClip` join table recording
+  each clip's individual outcome bucket from a batch deposit response),
+  `reporting` (`ClipEvent`, `RedemptionEvent`, `PromoReport`), and `api`
+  (`ApiClient`, wrapping a `django-oauth-toolkit` `Application` rather than
+  storing its own secret). All migrations generate and apply cleanly against
+  Postgres; full test suite (12 tests) and system checks still pass; server
+  still boots clean with every model registered in Django admin. One
+  settings fix needed: `OAUTH2_PROVIDER_APPLICATION_MODEL` must be set
+  explicitly even for oauth-toolkit's default `Application` model, or
+  `makemigrations` fails resolving its swappable-model dependency.
+- Justin asked about making signup "public" via Google/Microsoft — clarified
+  that registering OAuth credentials with Google/Microsoft is required
+  either way (public vs. gated doesn't change that), and that authentication
+  (can you log in) and authorization (do you see a tenant's data) are
+  separate questions. Confirmed: keep the invite-only tenant-attachment
+  design as already built — anyone can authenticate once real OAuth
+  credentials exist, but only an invited email gets access to a tenant.
+  Gave Justin the concrete Google Cloud Console / Microsoft Entra ID
+  registration steps to do on his own time (not blocking).
+- **Follow-up: ported the Google Wallet service** from `server.js`'s
+  `/wallet/google/:codeId` route — `wallet/service.py` (RS256 JWT signing,
+  same `reviewStatus` omission fix already documented in
+  `.claude/skills/google-wallet/SKILL.md`) + `wallet/views.py`
+  (`GET /wallet/google/<clip_id>/`). Real design question resolved along the
+  way: the Node POC had one Wallet OfferClass per `merchant`, reused across
+  all their offers, but the new schema ties `OfferChannelConfig` to `Offer`,
+  not `Tenant` — resolved by deriving the class id deterministically from
+  `tenant.id`, so it's naturally stable/reused per-tenant without a lookup
+  query, preserving the original intent. Deliberately did NOT switch the
+  wallet barcode from CODE_128/raw clip id to the AI(8112) string — that's
+  still an open, unconfirmed decision (plan Open Item 6). Added 4 tests,
+  including a real RS256 sign/verify round-trip against a throwaway
+  generated keypair (no real service account needed for tests). 16/16 tests
+  passing overall.
+- **Follow-up: built the TCB integration framework with a mock backing
+  implementation**, per Justin's direction — he still needs to request a
+  special TCB test/dev account, so build everything to call through a
+  swappable seam now rather than block on that. `tcb_integration/client.py`
+  defines `BaseTcbClient` (an ABC covering register_offer, assign_provider,
+  get_serialization_prefix, deposit_serials, create_fetch_code,
+  pull_audit_data) and `get_tcb_client()` — the one factory function
+  everything else must go through, switched by `settings.TCB_USE_MOCK`
+  (default `True`). `real_client.py` is the actual HTTP implementation
+  against TCB's documented endpoints (not yet tested against a live
+  account); `mock_client.py` is a stateful in-memory stand-in realistic
+  enough to exercise offer→lock→deposit→redemption end to end, including
+  the failure buckets (not_locked, no_copies_available, not_owned_by_you,
+  invalid_gs1s, already_added), plus a test-only `simulate_redemption()`
+  helper since there's no real POS to redeem against in dev.
+  `services.py` is the logged business-logic layer (`register_and_lock_offer`,
+  `issue_and_deposit_clip`, `pull_and_reconcile_redemptions`) everything
+  else should call.
+- **Real bug the tests caught**: both service functions were originally
+  `@transaction.atomic`, which silently rolled back the exact "this failed"
+  log/clip rows they exist to create, every time they raised. Removed the
+  decorator — Django's default autocommit is what the "never silently lost"
+  design actually needs. 7 new tests, 23/23 passing project-wide.
+- Not yet done: real Google/Microsoft OAuth app credentials, a
+  Celery-driven async outbox worker (deposits are synchronous for now — fine
+  for exercising the framework, not the final design), the consumer-facing
+  clip landing page, and — still — real TCB credentials to point
+  `RealTcbClient` at and confirm it actually works end to end.
+
 ## 2026-08-22 — Claude (with Justin), part 2
 
 - Set up a branching model: `main` (stable) ← `staging` (integration) ←
