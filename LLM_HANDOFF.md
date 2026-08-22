@@ -4,6 +4,28 @@
 
 ---
 
+# ⚠ Superseded as of 2026-08-22 — read this first
+
+**Active development moved to a new Python/Django backend at `backend/`.**
+See `backend/README.md` for the current architecture, how to run it, and
+what's built vs. not. Everything below this notice describes the original
+Node/Express proof-of-concept (`server.js` at the repo root), which is now
+kept only as a **behavioral reference** during the Django rewrite — not
+something being incrementally migrated, and not where new work should go.
+
+Why: the real product is a multi-tenant service distributing GS1 AI(8112)
+coupons for CPG clients via The Coupon Bureau — substantially bigger in
+scope than this POC (strict tenant isolation, OAuth SSO, an external TCB API
+integration, admin/reporting-heavy UI). See `CHANGELOG.md` entries dated
+2026-08-22 for the full narrative of the decision and everything built so
+far.
+
+If you're an LLM picking up this repo: check `backend/README.md` and recent
+`CHANGELOG.md` entries before assuming `server.js` is still the thing to
+change.
+
+---
+
 # Changelog
 
 This is the standing brief. `CHANGELOG.md` is the running session-by-session log.
@@ -12,7 +34,7 @@ This is the standing brief. `CHANGELOG.md` is the running session-by-session log
 
 ---
 
-# Current Status
+# Current Status (Node POC — superseded, see notice above)
 
 The application has moved beyond a proof-of-concept.
 
