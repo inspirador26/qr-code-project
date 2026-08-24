@@ -129,6 +129,18 @@ one atomic block was an actual bug caught by the test suite (silently rolled
 back the failure record on the exact path it exists to capture) — don't
 reintroduce it.
 
+## Current milestone: MVP clip demo
+
+The immediate goal (not yet built) is a single physically-demoable loop
+using pieces that already exist and are already tested: a **QR code** on a
+public offer page, that a **clip** action deposits against the (already
+mocked) TCB client, rendering a **real GS1 DataBar barcode** you can scan
+with a phone to confirm it decodes correctly. Deliberately excludes abuse
+prevention, the internal/self-service offer UI, and real TCB credentials —
+see `.claude/skills/tcb-integration/SKILL.md`'s "Current milestone" section
+for the exact routes, a real `/o/` naming collision with
+`oauth2_provider.urls` to avoid, and what's new vs. already built.
+
 ## Current status (as of this writing)
 
 **Built and tested:**

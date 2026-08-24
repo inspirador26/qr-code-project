@@ -122,4 +122,103 @@ PNG via `BARCODE_MEMORY_FILE` + `Symbol.memfile`). **No human-readable text**
   any service function or view.
 - No consumer-facing view calls any of this yet (`issue_and_deposit_clip`
   etc. are only exercised by tests). The scan→clip→barcode landing page is
-  the natural next piece.
+  the natural next piece — **now the active build target, see below.**
+
+## Current milestone (2026-08-22): MVP clip demo
+
+Justin's definition of success right now, scoped intentionally narrow: wire
+existing pieces together into one physically-demoable loop — **QR code →
+public offer page → clip → "deposit" against `MockTcbClient` → render a
+real GS1 DataBar barcode → scan it with a phone and confirm it decodes
+correctly.** Everything below is new glue around code that already exists
+and is already tested; no new business logic, no abuse prevention, no
+internal/self-service UI yet (see `cpg-engagement-workflow`'s "Immediate
+next milestone" note for what's deliberately deferred).
+
+**New views needed** (none exist yet — `coupons/views.py` only has a health
+check, `coupons/urls.py` only routes `""`):
+- `GET /offer/<uuid:offer_id>/` — public, unauthenticated landing page.
+  Loads the `Offer`, shows title/description/terms, one "Clip this offer"
+  button. No TCB call on a plain view.
+- `POST /offer/<uuid:offer_id>/clip/` — calls
+  `tcb_integration.services.issue_and_deposit_clip(offer, channel)`
+  (already built, already hits `MockTcbClient` when
+  `TCB_USE_MOCK=True`, the default). Redirects to the resulting clip's
+  barcode/detail view.
+- `GET /c/<uuid:clip_id>/barcode-8112.png` — wires the already-built
+  `gs1/barcode.py` renderer to an HTTP response for the first time. This is
+  what actually gets physically scanned to close the loop.
+
+  **Naming collision to avoid**: `config/urls.py` already routes
+  `path("o/", include("oauth2_provider.urls", ...))` — the OAuth2 token
+  endpoints. Don't reuse `/o/` for the offer landing page (that was the
+  Node POC's route shape, `GET /o/:offerId`, but it's now taken). Use
+  `/offer/` or similar instead.
+
+- **No new opaque-token field needed.** Both `Offer.id` and
+  `CouponClip.id` are already `UUIDField`s (see `offers/models.py`,
+  `coupons/models.py`), not sequential integers — the enumeration concern
+  raised in the abuse-prevention discussion is already satisfied by the
+  existing primary keys. Just use them directly in the URL path.
+
+**New non-view work**:
+- **QR code generation** — genuinely new, distinct from `gs1/barcode.py`
+  (which renders the *deposited GS1 data string* as a GS1 DataBar for
+  scanning at POS). The QR code instead encodes the **offer's public URL**
+  (`/offer/<offer_id>/`) — a normal QR, any standard library (e.g. PyPI
+  `qrcode`, MIT-licensed) works, no GS1/zint involvement. Natural home:
+  `gs1/qr.py` or a small addition to `offers/`, exposed as e.g.
+  `GET /offer/<uuid:offer_id>/qr.png`.
+- **Demo fixture data** — no onboarding/intake UI exists yet, so a demo
+  `Tenant` + `TcbManufacturerLink` + `Offer` (`partner_managed`, since that's
+  the path that doesn't require external TCB authorization first) +
+  `DistributionChannel` needs to exist to point a QR at. A management
+  command or plain Django admin data entry is enough; not worth building a
+  form for this milestone.
+
+### Implementation order (start here)
+
+1. **Seed demo data first — everything else depends on it.** New management
+   command, e.g. `offers/management/commands/seed_demo_offer.py`:
+   `get_or_create` a demo `Tenant`, a `DistributionChannel`
+   (`code="gs1_8112_barcode"` — table exists, nothing seeds it yet), a
+   `TcbManufacturerLink` (fake domain, `connection_status=authorized`); build
+   a `base_gs1` via `gs1.data_string.build_base_data_string(...)`; create the
+   `Offer` (`ownership_mode=partner_managed`, valid future campaign/
+   redemption windows, `total_circulation`/`max_clips` e.g. 1000) and its
+   `OfferChannelConfig`.
+   **Sequencing gotcha, confirmed by reading `mock_client.py` directly**:
+   the seed command must also call
+   `tcb_integration.services.register_and_lock_offer(offer)` right there —
+   `MockTcbClient.deposit_serials` checks `mof.locked` and
+   `provider_domain in mof.authorized_providers` and raises `not_locked`/
+   `not_owned_by_you` otherwise (see `mock_client.py` lines ~145-150). Skip
+   this step and every clip attempt will fail before you even get to see a
+   barcode. Print the seeded offer's UUID/URL at the end.
+2. **QR generator** — add `qrcode` to `requirements.txt`; new small module
+   (e.g. `offers/qr.py`) that builds the absolute URL to the offer landing
+   page and returns a PNG. Distinct from `gs1/barcode.py`, which encodes the
+   *deposited GS1 string*, not a URL.
+3. **The three views + urls** described above, in `coupons/`.
+4. **Manual end-to-end test**: `runserver` with `LISTEN_HOST=0.0.0.0` (see
+   `dev-environment` skill) so a phone on the same LAN can reach it, scan
+   the QR, tap clip, scan the resulting barcode with a scanner app, confirm
+   it decodes.
+5. **Optional but recommended**: a few view-level tests (landing page 200,
+   POST clip creates a `CouponClip`, barcode view returns `image/png`) —
+   consistent with how the rest of the project is tested (23 passing tests
+   as of this writing), not required to hit the manual success bar.
+
+**Verification is manual, not automated**: scan the rendered barcode PNG
+with a phone/barcode-scanner app and confirm it decodes to the expected
+AI(8112) string (cross-check with `gs1.data_string.parse_data_string`) and
+that the serial matches what `MockTcbClient` actually deposited. This is a
+physical/visual check, not a new automated test — the encoder/decoder logic
+already has unit test coverage.
+
+**Explicitly out of scope for this milestone** (deferred per the
+`cpg-engagement-workflow` discussion, not forgotten): bot/abuse detection,
+per-offer verification tiers, the internal intake form, self-service offer
+creation UI, `ClipEvent` telemetry (cheap to add later, not required to
+prove the loop), Celery outbox (synchronous deposit is fine for a demo),
+real TCB credentials.

@@ -137,16 +137,98 @@ on.
    manual/PDF process today, or does it need e-signature tooling
    eventually?
 
+## Follow-up decisions (2026-08-22, second session)
+
+Resumed from the restart above. These are settled directions — still not
+implemented (no migrations/views/code touched), but no longer open
+questions for the items below.
+
+- **Internal offer registration mechanism (resolves part of TODO item 3,
+  the CPG offer-management UX)**: a **dedicated internal intake form**, not
+  session impersonation. An `InternalOperator` picks a `Tenant` from an
+  internal-only screen and creates/edits `Offer` rows directly against it.
+  Explicitly chosen over an "act-as-tenant" login-switch approach, to keep
+  faith with the existing principle that internal access stays structurally
+  separate and auditable, never confusable with a client's own session/role.
+  This lives in the `internal/` app per the existing project structure, not
+  as a special mode of the tenant-facing panel.
+- **`ownership_mode` granularity**: confirmed **per-offer, not per-tenant**.
+  A tenant gets a default mode from onboarding (driven by whether their
+  settlement/clearing agent is TCB-capable — TODO item 4 below still governs
+  *how* we determine that), but individual offers can override it — e.g. a
+  CPG with multiple brands or a clearing-agent change mid-relationship can
+  have some offers `client_managed` and others `partner_managed`
+  simultaneously. No schema change needed — `Offer.ownership_mode` already
+  lives on the offer, not the tenant, in the existing data model; this just
+  confirms that's intentional and the internal intake form / self-service
+  form both need a per-offer mode selector rather than assuming the tenant's
+  default.
+- **Clip abuse-prevention model (resolves TODO item 2)**: a two-axis design,
+  not a single global policy —
+  1. **Always-on bot/scripted-traffic detection** (e.g. Cloudflare
+     Turnstile) in front of the public clip endpoint for every offer,
+     regardless of tier — this defends against automated hammering, not
+     per-offer fraud risk, so it isn't a per-offer choice.
+  2. **A per-offer (or per-distribution-channel) friction tier** on top of
+     that: `soft` (IP/session rate-limit + cookie/localStorage dedup —
+     default) vs. `identity_verified` (phone/email check before a clip
+     issues — for higher face-value offers where fraud cost justifies the
+     conversion hit). Needs a new field, likely
+     `Offer.clip_verification_level` (or on `OfferChannelConfig` if it
+     should vary per channel rather than per offer — not yet decided which).
+- **Public clip endpoint flow, concretized** (the "not yet built" piece
+  flagged in `tcb-integration`'s TODO and `backend/README.md`):
+  1. `Offer` gets an **opaque token** (not the sequential PK) used in the
+     public URL, e.g. `/o/<offer_token>/` — prevents enumerating offers
+     (this tenant's or another's) by incrementing an id. This token is what
+     gets encoded into the QR/DataBar/link handed to or received from the
+     client.
+  2. `GET /o/<offer_token>/` — public landing page, no TCB call, renders the
+     offer creative + a clip action. Viewing/scanning alone never issues a
+     clip.
+  3. `POST /o/<offer_token>/clip` — gated by the bot-detection layer, then
+     the offer's friction tier, then calls
+     `tcb_integration.services.issue_and_deposit_clip(offer, channel)`.
+  4. Response renders whichever channels are configured: GS1 DataBar PNG,
+     `CouponFetchCode` PIN, and/or the Google Wallet save button (already
+     built at `GET /wallet/google/<clip_id>/`).
+  5. `ClipEvent` rows recorded at each step (`link_opened`, `clip_confirmed`,
+     `wallet_saved`, `barcode_viewed`) — feeds the client performance
+     dashboard.
+  6. Note for tenant isolation: this whole path is unauthenticated and has
+     no session-selected tenant — `tenant` is threaded through every
+     service call via the offer token lookup instead. The "never see
+     another tenant's data" guarantee has to hold here too, just via a
+     different mechanism than the session-based one used elsewhere.
+
+Still open, deliberately not decided today (carried forward, not blocking):
+MOF drift detection/resync policy (TODO item 5), how we determine
+settlement-provider TCB-capability (TODO item 4), billing/invoicing design
+(TODO item 3), digital-media/ad-distribution capability (TODO item 1).
+
+## Immediate next milestone (2026-08-22, third session): scoped-down MVP demo
+
+Justin's near-term definition of success is deliberately narrower than the
+full workflow above: **build the customer-facing clip flow end-to-end
+against the mock TCB client and prove it with a physical barcode scan** —
+QR code → public offer page → clip action → "deposit" via
+`MockTcbClient` → render a real GS1 DataBar barcode → scan it and confirm
+it decodes correctly. This is the existing plan's Phase 2 "consumer-facing
+clip landing page" pulled forward as the concrete next build target, with
+the abuse-prevention/verification-tier model designed in the session above
+**deliberately deferred, not abandoned** — none of that (bot detection,
+per-offer friction tiers, the internal intake form, self-service UI) is
+required to prove the core loop works. See `tcb-integration`'s skill doc for
+the concrete technical breakdown of what this demo needs (routes, a real
+naming collision to avoid, what already exists vs. what's new).
+
 ## Where to resume
 
-This is a planning/discussion task, not an implementation one — matches how
-the original architecture plan was worked through (`EnterPlanMode`/
-`AskUserQuestion`) before any code was touched. Next session: pick up with
-Justin's follow-up questions on this workflow (he said he wanted to ask more
-before closing out), then decide which of the TODO items above are ready to
-fold into `i-am-working-on-compressed-valiant.md` and the data model versus
-still blocked on his input (items 1 and 4 in particular need him, not just
-research).
+Next session: turn the decisions above into actual schema changes
+(`Offer.clip_verification_level` or channel-level equivalent, the offer
+token field) and the `internal/` app's intake views, then continue down the
+still-open TODO list — items 1 and 4 still need Justin's input specifically,
+not just research.
 
 Nothing in this doc has touched code, the data model, or the plan file
 itself — no migrations, no new apps, no edits to `offers/models.py` etc.

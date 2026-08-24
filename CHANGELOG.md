@@ -14,6 +14,55 @@ Entry format:
 
 ---
 
+## 2026-08-22 — Claude (with Justin), part 7
+
+- Turned part 6's MVP-demo scope into a concrete, ordered implementation
+  plan Justin's partner can pick up directly: seed demo data first (new
+  management command — `Tenant`/`DistributionChannel`/`TcbManufacturerLink`/
+  `Offer`/`OfferChannelConfig`), then a QR generator, then three new
+  `coupons/` views (`GET /offer/<uuid>/`, `POST /offer/<uuid>/clip/`,
+  `GET /c/<uuid>/barcode-8112.png`), then a manual phone-scan test. Confirmed
+  by reading `tcb_integration/mock_client.py` directly (not assumed): the
+  seed command must call `register_and_lock_offer(offer)` itself, or every
+  clip attempt fails with `not_locked`/`not_owned_by_you` since the mock
+  enforces the same lock/authorization checks the real TCB API does.
+  Recorded as an "Implementation order" subsection in
+  `.claude/skills/tcb-integration/SKILL.md`'s "Current milestone" section —
+  no code written yet, this is purely the handoff plan. Justin is handing
+  this off to his partner to implement while he continues writing up
+  broader architecture/workflow details himself.
+
+## 2026-08-22 — Claude (with Justin), part 6
+
+- Planning-only session (no code changes), resuming the CPG engagement
+  workflow discussion from part 5. Walked through accounts (creation/
+  maintenance/security), the offer-publication mix (self-service vs.
+  internal-registered), offer storage/presentation, and the backend
+  mechanics of the public clip endpoint. Decided: internal offer
+  registration is a dedicated internal intake form (not session
+  impersonation); `ownership_mode` is per-offer, not per-tenant (no schema
+  change needed — already modeled that way); clip abuse-prevention is a
+  two-axis design (always-on bot detection + a per-offer friction tier,
+  `soft` vs. `identity_verified`) — recorded in
+  `.claude/skills/cpg-engagement-workflow/SKILL.md`.
+- Justin then scoped the actual next build target much narrower: an MVP
+  demo proving the full consumer loop end-to-end against the mock TCB
+  client — QR code → public offer page → clip → mock deposit → real GS1
+  DataBar barcode → scan it and confirm it decodes. Documented the concrete
+  technical breakdown in `.claude/skills/tcb-integration/SKILL.md`'s new
+  "Current milestone" section: three new views (`GET /offer/<uuid>/`,
+  `POST /offer/<uuid>/clip/`, `GET /c/<uuid>/barcode-8112.png`), a new QR
+  generator (distinct from the existing GS1 barcode renderer — a plain
+  `qrcode` dependency encoding the offer URL, not a GS1 data string), and
+  demo fixture data (no onboarding UI exists yet). Caught a real naming
+  collision before anyone hit it: `config/urls.py` already routes `/o/` to
+  `oauth2_provider.urls`, so the public offer route can't reuse the Node
+  POC's old `/o/:offerId` shape — needs `/offer/` or similar instead. Also
+  noted `Offer.id`/`CouponClip.id` are already UUIDs, so the opaque-token
+  concern from the abuse-prevention discussion is already satisfied by the
+  existing primary keys — no new field required. Added a pointer section to
+  `backend/README.md` so this is the first thing a partner reads.
+
 ## 2026-08-22 — Claude (with Justin), part 5
 
 - Walked Justin through every model currently registered in Django admin
