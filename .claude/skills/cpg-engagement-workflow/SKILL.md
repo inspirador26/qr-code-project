@@ -31,10 +31,17 @@ A digital-media-marketing-driven client engagement:
    can publish to TCB directly, or whether the offer has to be published
    through us instead.
 5. A settlement provider is the CPG's source of truth for their offer
-   profile and the invoice processor: a retailer accepts the digital offer,
-   then invoices the settlement provider, who processes the claim on behalf
-   of the CPG. Offers therefore often originate from this third party, not
-   from the CPG directly and not from us.
+   profile and the invoice processor — but the retailer doesn't invoice the
+   settlement provider directly. The real chain (corrected 2026-08-24, see
+   below): the retailer's own system captures the redemption at checkout,
+   sends that data to the retailer's own **Retailer Clearing House**, which
+   parses it out by brand and invoices each brand's **Settlement Provider**
+   (aka Settlement Agent). The Settlement Provider audits/validates those
+   claims, consolidates them into one "retailer pass-through invoice" for
+   the CPG, and money flows back down the same chain (CPG → Settlement
+   Provider → Retailer Clearing House → Retailer). Offers therefore often
+   originate from the Settlement Provider, not from the CPG directly and
+   not from us.
 6. Client sends us the offer ID. We look up the offer's actual terms in the
    client's TCB account (face value, purchase requirement, offer ID, funder
    ID, valid stores, etc.) to confirm our records are in sync — TCB is the
@@ -60,13 +67,46 @@ A digital-media-marketing-driven client engagement:
   TCB-capable, not just an arbitrary choice on our onboarding form. Worth
   adding a `SettlementProvider`-shaped concept (name, is_tcb_capable) that
   onboarding checks before deciding the ownership_mode.
-- Settlement/clearing (financial claims processing, chosen by the CPG) is a
-  **different TCB actor than the Clearinghouse role** (chosen/authorized by
-  the retailer to settle with the manufacturer) — don't conflate them. Even
-  when a CPG's settlement provider can't publish to TCB, we can still
-  register the offer ourselves as Authorized Partner; the CPG's own
-  settlement provider keeps handling retailer invoicing independently,
-  since that's a separate mechanism from MOF registration.
+- **Corrected 2026-08-24 — TCB is not a party to settlement at all**, and
+  "Clearinghouse"/"Manufacturer Agent" are not TCB-defined roles (earlier
+  drafts of this doc implied they were — wrong). TCB is a **neutral
+  validation service only**: it registers/locks offers and validates codes
+  at checkout, funded by the CPG paying TCB **$0.01 per clip** (per pincode
+  added to an offer's valid list). Full stop — no money for the discount
+  itself moves through TCB. The actual reimbursement chain is two
+  independent third parties whose *financial/claims relationship* has
+  nothing to do with TCB: the **Retailer Clearing House** (chosen by the
+  retailer, receives the retailer's captured redemption data) and the
+  CPG's own **Settlement Provider/Agent** (chosen by the CPG, invoiced by
+  the Retailer Clearing House, audits claims, invoices the CPG). See "The
+  workflow, as Justin described it" above (item 5) for the corrected full
+  chain.
+
+  **Refined further (2026-08-24, same day)**: the company fulfilling that
+  Settlement Provider role for a CPG *may also* separately hold a real TCB
+  role — **Authorized Partner** — which is TCB-facing and covers exactly
+  one thing: depositing the offer into TCB's Positive Offer File on the
+  CPG's behalf. This isn't a new concept — it's the same "Authorized
+  Partner" role the plan already uses for *our own* `partner_managed` path
+  (`register_offer` in `tcb_integration/client.py`). Settlement Provider
+  and Authorized Partner are functionally separate (one's financial/claims,
+  one's TCB registration/deposit) — but the *same real-world company* often
+  wears both hats for a given CPG, which is exactly the kind of
+  industry-language overlap worth staying alert to. **Product scoping
+  decision, confirmed by Justin**: for `client_managed` offers, assume the
+  CPG already has a working Authorized Partner actively depositing for
+  them — building tooling to act as a stand-in Authorized Partner for
+  clients who don't have one yet ("smaller clients") is real future scope,
+  explicitly **not** part of the current build.
+- **Naming collision to watch for in our own docs/code**: we register with
+  TCB *as a "Provider"* (to deposit codes — see `TCB_PROVIDER_ACCESS_KEY`,
+  `assign_provider` in `tcb_integration`). That is a completely different
+  thing from a CPG's "Settlement Provider." Same word, unrelated concepts —
+  be explicit about which one is meant anywhere both could appear.
+- **New, useful economics fact**: TCB's $0.01/clip fee is a real unit cost
+  that lands on whoever registers the offer. For `partner_managed` offers
+  that's us — worth factoring into the billing/invoicing design (TODO item
+  3 below) as a known cost floor under our own per-clip pricing to the CPG.
 - For `client_managed` offers, `Offer.mof_snapshot` should be **populated by
   pulling from TCB** (a read call against the MOF), not hand-entered by the
   client into our form — and this implies a drift-detection concern: the

@@ -14,6 +14,40 @@ Entry format:
 
 ---
 
+## 2026-08-24 — Claude (with Justin)
+
+- Produced two executive/onboarding artifacts at Justin's request: a CEO
+  pitch one-pager ("The Redemption Layer") and an ERD reference page
+  ("Coupon Platform Data Model"), both published as private Claude
+  artifacts (not repo files). Then wrote a plain-English developer
+  onboarding explanation of the coupon domain in chat.
+- **Justin corrected a real domain-model error across all three**: TCB is
+  not a "clearinghouse" and does not settle payments — it's a neutral
+  validation service only (registers/locks offers, validates codes at
+  checkout), funded by the CPG paying TCB $0.01 per clip. He also
+  corrected a second, subtler mistake: "Clearing House" and "Manufacturer
+  Agent" are not TCB-defined roles either — the **Retailer Clearing
+  House** (chosen by the retailer) and the CPG's own **Settlement
+  Provider/Agent** are two independent third parties with no relationship
+  to TCB at all, who deal directly with each other for the actual
+  claims/audit/payment chain (retailer → Retailer Clearing House →
+  Settlement Provider → CPG, money flowing back the same path). Confirmed
+  this doesn't change any already-built code — `tcb_integration/services.py`
+  only ever modeled TCB's two real touchpoints (origination + checkout
+  validation/audit-pull), which turns out to be exactly right; the error
+  was in the surrounding narrative docs and diagrams, not the
+  implementation.
+- Fixed the pitch artifact's diagram/copy (dropped "settles" from TCB's
+  role everywhere it appeared) and republished it. Fixed the corresponding
+  passage in `.claude/skills/cpg-engagement-workflow/SKILL.md`, which had
+  previously described "the Clearinghouse role" as something TCB itself
+  defines — also flagged a real naming-collision risk for future readers:
+  we register with TCB *as a "Provider"* (to deposit codes), which is an
+  unrelated concept to a CPG's "Settlement Provider," despite the shared
+  word. Also captured a new economics fact worth remembering for the
+  billing/invoicing design (still not built): TCB's $0.01/clip fee is a
+  real cost floor under whatever we charge a CPG per clip.
+
 ## 2026-08-22 — Claude (with Justin), part 7
 
 - Turned part 6's MVP-demo scope into a concrete, ordered implementation
