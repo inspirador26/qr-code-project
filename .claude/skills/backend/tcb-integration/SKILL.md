@@ -178,9 +178,9 @@ check, `coupons/urls.py` only routes `""`):
 
 ### Implementation order (start here)
 
-1. **Seed demo data first — everything else depends on it.** New management
-   command, e.g. `offers/management/commands/seed_demo_offer.py`:
-   `get_or_create` a demo `Tenant`, a `DistributionChannel`
+1. **Seed demo data first — everything else depends on it.** Implemented as
+   `offers/management/commands/seed_demo_offer.py`: `get_or_create` a demo
+   `Tenant`, a `DistributionChannel`
    (`code="gs1_8112_barcode"` — table exists, nothing seeds it yet), a
    `TcbManufacturerLink` (fake domain, `connection_status=authorized`); build
    a `base_gs1` via `gs1.data_string.build_base_data_string(...)`; create the
@@ -195,6 +195,9 @@ check, `coupons/urls.py` only routes `""`):
    `not_owned_by_you` otherwise (see `mock_client.py` lines ~145-150). Skip
    this step and every clip attempt will fail before you even get to see a
    barcode. Print the seeded offer's UUID/URL at the end.
+   The command intentionally refuses real TCB by default; keep using
+   `TCB_USE_MOCK=True` for demo seeding unless a real smoke test is
+   explicitly intended.
 2. **QR generator** — add `qrcode` to `requirements.txt`; new small module
    (e.g. `offers/qr.py`) that builds the absolute URL to the offer landing
    page and returns a PNG. Distinct from `gs1/barcode.py`, which encodes the
@@ -206,7 +209,7 @@ check, `coupons/urls.py` only routes `""`):
    it decodes.
 5. **Optional but recommended**: a few view-level tests (landing page 200,
    POST clip creates a `CouponClip`, barcode view returns `image/png`) —
-   consistent with how the rest of the project is tested (23 passing tests
+   consistent with how the rest of the project is tested (25 passing tests
    as of this writing), not required to hit the manual success bar.
 
 **Verification is manual, not automated**: scan the rendered barcode PNG

@@ -66,9 +66,23 @@ without any real TCB credentials at all (see below).
 python manage.py test
 ```
 
-23 tests as of this writing, all passing — covers the GS1 data-string
+25 tests as of this writing, all passing — covers the GS1 data-string
 encoder/parser, barcode rendering, the Google Wallet JWT signing, and the
 full TCB register→lock→deposit→redeem flow against the mock client.
+
+## Demo data
+
+For the MVP clip demo, seed a known-good tenant/offer/channel setup with:
+
+```bash
+python manage.py seed_demo_offer
+```
+
+The command creates or updates a demo `Tenant`, `TcbManufacturerLink`,
+`DistributionChannel` (`code="gs1_8112_barcode"`), `Offer`, and
+`OfferChannelConfig`, then calls `register_and_lock_offer(offer)` so the
+mock TCB client will accept clip deposits for that offer in the current
+process. It prints the seeded offer UUID and planned `/offer/<uuid>/` URL.
 
 ## Architecture — Django apps
 

@@ -14,6 +14,25 @@ Entry format:
 
 ---
 
+## 2026-09-03 — Codex (with Justin)
+
+- Added `python manage.py seed_demo_offer`, a Django management command under
+  `backend/offers/management/commands/`, to create a repeatable demo
+  `Tenant` + authorized `TcbManufacturerLink` + `gs1_8112_barcode`
+  `DistributionChannel` + partner-managed `Offer` + `OfferChannelConfig`.
+  The command builds `base_gs1` with `gs1.data_string.build_base_data_string`,
+  calls `tcb_integration.services.register_and_lock_offer(offer)` so the
+  mock TCB client will accept deposits, refuses real TCB by default, and
+  prints the seeded offer UUID/planned `/offer/<uuid>/` URL.
+- Added focused tests for the seeder, including a rerun after resetting the
+  in-memory mock TCB state to mimic a fresh command process against an
+  already-seeded database.
+- Documented the command in `backend/README.md` and updated the TCB skill doc
+  so the handoff's "seed demo data first" requirement now points at the
+  implemented command.
+
+---
+
 ## 2026-09-02 — Claude (with Justin), third entry
 
 - Reorganized `.claude/skills/` from a flat list into segment directories,
