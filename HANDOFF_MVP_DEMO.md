@@ -111,11 +111,19 @@ menu if the link doesn't open for you.
 
 ## Full detail / living docs
 
-- `.claude/skills/tcb-integration/SKILL.md` — "Current milestone" section
-  has the same breakdown as above plus the TCB client architecture, mock
-  vs. real, and known gotchas (e.g. the `pyzint` vs `zint-bindings` issue).
-- `.claude/skills/cpg-engagement-workflow/SKILL.md` — the broader product
-  workflow this milestone is a deliberately narrow slice of (accounts,
-  offer-ownership modes, abuse prevention design, still not built).
+- `.claude/skills/backend/tcb-integration/SKILL.md` — "Current milestone"
+  section has the same breakdown as above plus the TCB client architecture,
+  mock vs. real, and known gotchas (e.g. the `pyzint` vs `zint-bindings`
+  issue).
+- `.claude/skills/product/cpg-engagement-workflow/SKILL.md` — the broader
+  product workflow this milestone is a deliberately narrow slice of
+  (accounts, offer-ownership modes, abuse prevention design, still not
+  built).
+- `backend/docs/HANDOFF_offer_clip_flow.md` — corrected, code-verified spec
+  for the offer-clip route (supersedes the `/o/` prefix mentioned above —
+  it collides with `oauth2_provider`, already mounted there).
+- `.claude/skills/skills-organization/SKILL.md` — how skill docs are now
+  grouped into segment folders (`backend/`, `frontend/`, `legacy/`,
+  `product/`, `domain/`, `infra/`).
 - `CHANGELOG.md` — session-by-session narrative if you want the "why" behind
   any of the above.

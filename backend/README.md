@@ -137,9 +137,11 @@ public offer page, that a **clip** action deposits against the (already
 mocked) TCB client, rendering a **real GS1 DataBar barcode** you can scan
 with a phone to confirm it decodes correctly. Deliberately excludes abuse
 prevention, the internal/self-service offer UI, and real TCB credentials —
-see `.claude/skills/tcb-integration/SKILL.md`'s "Current milestone" section
-for the exact routes, a real `/o/` naming collision with
-`oauth2_provider.urls` to avoid, and what's new vs. already built.
+see `backend/docs/HANDOFF_offer_clip_flow.md` for the exact routes
+(verified against current code), a real `/o/` naming collision with
+`oauth2_provider.urls` to avoid, and what's new vs. already built. Skill
+docs now live under segment folders — see
+`.claude/skills/skills-organization/SKILL.md`.
 
 ## Current status (as of this writing)
 

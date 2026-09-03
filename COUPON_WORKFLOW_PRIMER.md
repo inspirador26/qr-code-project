@@ -3,7 +3,7 @@
 For a developer who's new to the digital coupon industry and needs the
 mental model before touching the code. Plain-English version — for the
 precise glossary/terminology reference, see
-`.claude/skills/coupon-industry-roles/SKILL.md` in the repo.
+`.claude/skills/domain/coupon-industry-roles/SKILL.md` in the repo.
 
 ## Start with the real-world thing
 

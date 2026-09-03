@@ -246,7 +246,7 @@ MOF drift detection/resync policy (TODO item 5), how we determine
 settlement-provider TCB-capability (TODO item 4), billing/invoicing design
 (TODO item 3), digital-media/ad-distribution capability (TODO item 1).
 
-## Immediate next milestone (2026-08-22, third session): scoped-down MVP demo
+## Immediate next milestone (2026-08-22, third session; expanded 2026-09-02): scoped-down MVP demo
 
 Justin's near-term definition of success is deliberately narrower than the
 full workflow above: **build the customer-facing clip flow end-to-end
@@ -261,6 +261,25 @@ per-offer friction tiers, the internal intake form, self-service UI) is
 required to prove the core loop works. See `tcb-integration`'s skill doc for
 the concrete technical breakdown of what this demo needs (routes, a real
 naming collision to avoid, what already exists vs. what's new).
+
+**Added 2026-09-02**: the MVP milestone also needs account creation —
+before the QR-to-barcode loop can be demoed, we need to be able to
+**create an account (`Tenant`) and add offers under it**, and the demo
+should prove this works for **more than one account**, not just a single
+hardcoded tenant. Concretely, in scope for this milestone:
+- A way to create a `Tenant` (the internal intake form from the
+  "Follow-up decisions" section above is the mechanism already agreed on —
+  this milestone is the first thing that actually requires it to exist,
+  even in a minimal form).
+- Create multiple `Tenant` rows, each able to have its own `Offer`(s), and
+  confirm offers/clips stay scoped to the right tenant (ties back to the
+  existing tenant-isolation guarantee — see `tenancy-and-auth` skill).
+- Add at least one `Offer` per account so the clip flow above has something
+  real to run against per tenant, rather than a single seeded offer.
+
+This doesn't pull in the rest of the internal-ops UI plan (usage/billing
+dashboard, contract tracking, etc.) — just enough of the account layer to
+create accounts and attach offers to them ahead of the barcode-scan demo.
 
 ## Where to resume
 

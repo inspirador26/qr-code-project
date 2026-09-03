@@ -26,6 +26,98 @@ change.
 
 ---
 
+# Partner handoff — objectives (2026-09-02)
+
+Justin is bringing a partner onto the Django backend (`backend/`). This is
+the punch list for that work — everything below builds on the architecture
+in `backend/README.md` and the planning discussion in
+`.claude/skills/product/cpg-engagement-workflow/SKILL.md`, both worth
+reading first. See `.claude/skills/skills-organization/SKILL.md` for how
+skill docs are now grouped into segment folders (`backend/`, `frontend/`,
+`legacy/`, `product/`, `domain/`, `infra/`).
+Do not touch `server.js` (see superseded notice above) — all new work goes
+in `backend/`.
+
+## Objective 1 — account creation
+
+We need a way to create accounts. In this codebase "account" = `Tenant`
+(see `backend/tenancy/`). Concretely:
+- A way to create a new `Tenant` and add `Offer`s under it (`backend/offers/`).
+- Must support **multiple** tenants, each with their own offers, with
+  offer/clip data staying correctly scoped per tenant (the existing
+  tenant-isolation guarantee — every tenant-scoped model carries a `tenant`
+  FK and every query takes `tenant` as a mandatory argument; see
+  `.claude/skills/backend/tenancy-and-auth/SKILL.md`).
+- The mechanism already agreed on for this (see "Follow-up decisions" in
+  the `cpg-engagement-workflow` skill doc) is a **dedicated internal intake
+  form** in the `internal/` app — an `InternalOperator` picks/creates a
+  `Tenant` and creates `Offer` rows against it directly. Not session
+  impersonation, not a special mode of the tenant-facing panel.
+
+## Objective 2 — UI for users and superusers
+
+Two distinct UI surfaces, kept structurally separate (this separation is a
+deliberate existing principle, not incidental):
+- **Users** — the CPG tenant-facing panel. Not built yet; see
+  `cpg-engagement-workflow`'s "UI plan, by actor" section for the intended
+  shape (offer list/detail, self-service offer submission, distribution
+  assets, performance dashboard).
+- **Superusers** — internal ops, gated by `InternalOperator`
+  (`backend/internal/`), separate from Django's own `/admin/` (which
+  already exists and has every model registered — see `backend/README.md`
+  "Quick start"). This is where Objective 1's intake form lives.
+
+## Objective 3 (first concrete build target) — offer ID → clippable URI
+
+The first real objective to fulfill end-to-end: **a user gives us an offer
+ID, and we turn that into a working clip URI.** Broken into the actual
+steps, mapped to what already exists in `backend/`:
+
+1. Take a client's offer ID and create/attach an `Offer`
+   (`backend/offers/`), generating its public **URI** — an opaque
+   `offer_token` (not the sequential PK — prevents offer enumeration).
+   **Route prefix correction (2026-09-02)**: the original plan proposed
+   `GET /o/<offer_token>/`, but that collides with `django-oauth-toolkit`,
+   already mounted at `/o/` in `config/urls.py` — use a different prefix
+   (e.g. `/offer/<offer_token>/`). See
+   `backend/docs/HANDOFF_offer_clip_flow.md` for the corrected, verified
+   spec (routes, exact current function signatures, migration needed) —
+   that doc supersedes the route paths below and in
+   `product/cpg-engagement-workflow`'s "Public clip endpoint flow,
+   concretized" section.
+2. When a user clicks/opens that URI, it's just the landing page — **no
+   TCB call yet**, renders the offer + a clip action. Viewing alone never
+   issues a clip.
+3. The clip action is where the backend process runs:
+   - Generate the GS1 AI(8112) **data string** with a **unique pincode**
+     for this offer — `backend/gs1/data_string.py` already does the
+     encoding/parsing.
+   - **Deposit that pincode into TCB** for the offer — call
+     `tcb_integration.services.issue_and_deposit_clip(offer, channel)`,
+     which already exists and is tested against `MockTcbClient`
+     (`TCB_USE_MOCK=True` — no real TCB credentials needed to build/test
+     this). Do **not** wrap this in `@transaction.atomic` — see
+     `backend/README.md`'s TCB integration seam section for why (it's a
+     deliberate design, broke a test once already).
+   - **Present the offer for clipping** — render the resulting real GS1
+     DataBar barcode (`backend/gs1/barcode.py`) and/or the
+     `CouponFetchCode` PIN so the shopper can actually redeem.
+   - **Ensure the pincode is never reused for that offer** — this is
+     `CouponClip`'s job (`backend/coupons/`), one row per issued/deposited
+     serial; confirm the uniqueness constraint is actually enforced
+     per-offer, not just per-database, before calling this done.
+
+This is the same flow already scoped as the "MVP clip demo" milestone in
+both `backend/README.md` ("Current milestone") and
+`.claude/skills/backend/tcb-integration/SKILL.md`. Objectives 1 and 2 above
+are new scope layered on top of that milestone (per the
+`cpg-engagement-workflow` skill's 2026-09-02 update) —
+Objective 3 needs at least one real `Tenant`+`Offer` (Objective 1) to run
+against, so build the minimal account-creation path first even if the
+rest of Objective 1/2's UI stays rough.
+
+---
+
 # Changelog
 
 This is the standing brief. `CHANGELOG.md` is the running session-by-session log.

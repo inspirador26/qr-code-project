@@ -8,5 +8,8 @@
 - See `LLM_HANDOFF.md` for the standing architecture/context brief and
   `CHANGELOG.md` for session-by-session history.
 - See `.claude/skills/` for living per-feature docs (architecture, known
-  problems/solutions, TODOs): `dev-environment`, `qr-coupon-flow`,
-  `google-wallet`.
+  problems/solutions, TODOs), grouped into segment folders (`backend/`,
+  `frontend/`, `legacy/`, `product/`, `domain/`, `infra/`) — see
+  `.claude/skills/skills-organization/SKILL.md` for the policy on that
+  grouping, including where each segment tracks its own cross-cutting
+  decisions/known issues (`<segment>/DECISIONS_AND_ISSUES.md`).

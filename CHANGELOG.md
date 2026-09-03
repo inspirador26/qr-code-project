@@ -14,6 +14,104 @@ Entry format:
 
 ---
 
+## 2026-09-02 — Claude (with Justin), third entry
+
+- Reorganized `.claude/skills/` from a flat list into segment directories,
+  per Justin's request to track policy decisions/issues per area (e.g.
+  frontend, backend). New segments: `backend/` (`tcb-integration`,
+  `tenancy-and-auth`, `google-wallet`), `frontend/` (empty — no frontend
+  built yet), `legacy/` (`qr-coupon-flow`), `product/`
+  (`cpg-engagement-workflow`), `domain/` (`coupon-industry-roles`), `infra/`
+  (`dev-environment`). Moved via `git mv`, history preserved.
+- Added a new main policy skill,
+  `.claude/skills/skills-organization/SKILL.md`, documenting the segment
+  table, where a new skill doc should go, and the
+  `<segment>/DECISIONS_AND_ISSUES.md` convention for cross-cutting
+  decisions/known issues that apply to a whole segment rather than one
+  feature.
+- Created `DECISIONS_AND_ISSUES.md` in every segment, seeded with real
+  entries where we already had them: `backend/` got the `/o/` ↔
+  `oauth2_provider` routing collision and the "don't wrap
+  failure-logging service functions in `transaction.atomic`" pattern
+  (both surfaced while spec'ing the offer-clip-flow handoff);
+  `legacy/` and `domain/` got the existing Node-POC-is-reference-only and
+  TCB-is-not-a-settlement-party corrections, respectively, cross-referenced
+  from where they were first recorded. `frontend/` and `infra/` are empty
+  templates — no cross-cutting entries exist yet.
+- Fixed now-stale `.claude/skills/<name>/SKILL.md` path references in
+  `LLM_HANDOFF.md`, `backend/README.md`, `backend/wallet/service.py`,
+  `COUPON_WORKFLOW_PRIMER.md`, and `HANDOFF_MVP_DEMO.md` to point at the
+  new segmented paths. Left historical references inside past
+  `CHANGELOG.md` entries alone (they were accurate at the time written).
+  Also corrected `LLM_HANDOFF.md`'s Objective 3 description, which still
+  said `GET/POST /o/<offer_token>/...` — that route prefix was already
+  known-wrong per the `backend/docs/HANDOFF_offer_clip_flow.md` research
+  earlier this session; now points there as the superseding spec.
+- **Caveat for next session**: Claude Code's skill listing for this
+  session was generated before the move, so this session still only sees
+  the new `skills-organization` skill in its available-skills list, not
+  the moved ones (`backend:tcb-integration` etc.) — they should appear
+  correctly once a fresh session loads `.claude/skills/` from disk. Worth
+  confirming next session that nested skills are still auto-discovered and
+  invokable the same way.
+- Nothing in application code changed — this is docs/skills reorganization
+  only.
+
+---
+
+## 2026-09-02 — Claude (with Justin), second entry
+
+- Wrote a standalone, self-contained technical handoff at
+  `backend/docs/HANDOFF_offer_clip_flow.md` for the partner's LLM to work
+  from directly — covers Objective 3 (offer ID → clippable URI → GS1
+  barcode) from the partner-objectives entry above.
+- Verified the spec against actual current code (not just the plan docs)
+  via a read-only research pass: confirmed `Offer` has no public
+  token/slug field yet (needs a migration), confirmed `CouponClip`'s
+  existing `unique_serialized_gs1` constraint already enforces
+  "never reuse a pincode for an offer" as a side effect of `serialized_gs1`
+  embedding the offer's unique `base_gs1`, confirmed `CouponFetchCode` has
+  **no** uniqueness constraint at all (flagged as a gap, not fixed), and
+  found a real routing collision: `/o/` is already mounted by
+  `django-oauth-toolkit` in `config/urls.py`, so the new public offer route
+  can't use that prefix (recommended `/offer/<token>/` in the `offers` app
+  instead).
+- Doc includes exact current signatures for
+  `tcb_integration.services.issue_and_deposit_clip`,
+  `gs1.data_string.build_serialized_data_string`,
+  `gs1.barcode.render_gs1_databar_png`, the existing
+  `GET /wallet/google/<clip_id>/` route to reuse as-is, and a
+  prerequisite note to create a test `Tenant`+`Offer` via `/admin/` rather
+  than waiting on the (separate, not-yet-built) internal intake form.
+- Nothing implemented — spec/handoff doc only. No migrations or code
+  touched.
+
+---
+
+## 2026-09-02 — Claude (with Justin)
+
+- Justin is bringing a partner onto the `backend/` Django rewrite. Added a
+  "Partner handoff — objectives" section to `LLM_HANDOFF.md` (right after
+  the superseded notice) and expanded the MVP milestone in
+  `.claude/skills/cpg-engagement-workflow/SKILL.md`.
+- Three objectives recorded: (1) account creation — a way to create
+  `Tenant`s and add `Offer`s under them, supporting multiple tenants with
+  correctly-scoped data; (2) two structurally separate UI surfaces — a
+  tenant-facing user panel and an `InternalOperator`-gated superuser
+  surface (distinct from Django `/admin/`); (3) the first concrete build
+  target — offer ID in, clippable URI out: `Offer` + opaque `offer_token`
+  → landing page → clip action generates a GS1 AI(8112) data string with a
+  unique pincode, deposits it via `tcb_integration.services.issue_and_deposit_clip`
+  (mock TCB client), renders the barcode/PIN, and enforces the pincode is
+  never reused for that offer (`CouponClip`).
+- Nothing implemented yet — planning/handoff docs only. No code, migrations,
+  or models touched.
+- Next: Objective 1 (account creation via the `internal/` intake form) needs
+  to land first since Objective 3 needs a real `Tenant`+`Offer` to run
+  against.
+
+---
+
 ## 2026-08-24 — Claude (with Justin)
 
 - Produced two executive/onboarding artifacts at Justin's request: a CEO
