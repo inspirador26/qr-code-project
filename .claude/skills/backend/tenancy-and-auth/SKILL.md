@@ -35,6 +35,11 @@ TODO) before `request.tenant` is set. Any stale/invalid session tenant_id
 model should take `tenant` as an explicit, mandatory argument — never query
 a tenant-scoped model without a tenant filter, even "just for now."
 
+The first tenant-facing UI slice lives at `/app/`: users with active
+`TenantMembership` rows explicitly select an account, which sets
+`request.session["active_tenant_id"]`; dashboard queries then filter offers
+by that selected tenant.
+
 ## Auth flow
 
 `accounts` app: custom `User` (email as `USERNAME_FIELD`, via a custom
@@ -75,8 +80,9 @@ namespace, never through the tenant-membership path.
 
 ## TODO
 
-- No tenant-switch view exists — a user in >1 tenant currently has no UI
-  path to pick which one they're acting as.
+- Tenant switch UI is minimal: `/app/tenants/` lets a user choose among
+  active memberships, but there is no polished post-login routing or
+  account management flow yet.
 - Postgres Row-Level Security as defense-in-depth (independent of the
   service-layer guarantees above) — planned, not started.
 - Real Google/Microsoft `SocialApp` credentials.

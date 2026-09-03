@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Internal Ops{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-semibold tracking-normal">Internal Ops</h1>
+    <p class="mt-1 text-sm text-slate-600">Accounts and offer intake</p>
+  </div>
+  <a href="{% url 'internal:account_intake' %}" class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">New Account</a>
+</div>
+
+<section class="mb-8">
+  <h2 class="mb-3 text-sm font-semibold uppercase tracking-normal text-slate-500">Accounts</h2>
+  <div class="overflow-hidden rounded border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-100 text-left text-slate-600">
+        <tr>
+          <th class="px-4 py-3 font-medium">Name</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Billing Contact</th>
+          <th class="px-4 py-3 font-medium">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for tenant in tenants %}
+          <tr>
+            <td class="px-4 py-3 font-medium">{{ tenant.name }}</td>
+            <td class="px-4 py-3">{{ tenant.get_status_display }}</td>
+            <td class="px-4 py-3">{{ tenant.billing_contact_email|default:"" }}</td>
+            <td class="px-4 py-3 text-slate-500">{{ tenant.created_at|date:"Y-m-d" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="px-4 py-6 text-slate-500">No accounts yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2 class="mb-3 text-sm font-semibold uppercase tracking-normal text-slate-500">Recent Offers</h2>
+  <div class="overflow-hidden rounded border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-100 text-left text-slate-600">
+        <tr>
+          <th class="px-4 py-3 font-medium">Offer</th>
+          <th class="px-4 py-3 font-medium">Account</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Base GS1</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for offer in recent_offers %}
+          <tr>
+            <td class="px-4 py-3 font-medium">{{ offer.title }}</td>
+            <td class="px-4 py-3">{{ offer.tenant.name }}</td>
+            <td class="px-4 py-3">{{ offer.get_status_display }}</td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-600">{{ offer.base_gs1 }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="px-4 py-6 text-slate-500">No offers yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

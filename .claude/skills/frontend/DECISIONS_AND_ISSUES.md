@@ -1,9 +1,7 @@
 # Frontend — segment-level decisions & known issues
 
-No frontend work has started yet (as of 2026-09-02) — no skill docs exist
-under `.claude/skills/frontend/` either. This file exists so the segment
-has somewhere to log decisions/issues from the first frontend work onward,
-per `.claude/skills/skills-organization/SKILL.md`. Newest on top.
+This file tracks decisions/issues from frontend work onward, per
+`.claude/skills/skills-organization/SKILL.md`. Newest on top.
 
 See `.claude/skills/product/cpg-engagement-workflow/SKILL.md`'s "UI plan,
 by actor" section for the planned shape of the CPG client panel and
@@ -13,4 +11,17 @@ from once building starts.
 
 ---
 
-_(no entries yet)_
+## 2026-09-03 — First UI slice is server-rendered Django templates
+
+**Decision**: the first Objective 2 UI work uses Django templates under
+`backend/templates/`, extending the existing `base.html` with Tailwind/htmx/
+Alpine CDN scaffolding. No SPA or frontend build pipeline yet.
+
+**Why**: the immediate work is CRUD/dashboard-heavy and already lives in the
+Django backend. Server-rendered forms and tables are enough to validate the
+internal intake and tenant-isolation flows before adding frontend build
+complexity.
+
+**How to apply**: keep `/internal/` and `/app/` structurally separate.
+Internal ops views may cross tenants but must be gated by internal access;
+tenant-facing views must filter by the selected active tenant.

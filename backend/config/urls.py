@@ -8,6 +8,7 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
     path("internal/", include("internal.urls")),
+    path("app/", include("tenancy.urls")),
     path("wallet/", include("wallet.urls")),
     path("api/v1/", include("api.urls")),
     path("", include("coupons.urls")),

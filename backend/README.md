@@ -46,6 +46,11 @@ Then:
   each with a short description of what it's for right on the index page
   (see `config/admin.py` if you need to add/update one — it's a lookup dict,
   not per-model boilerplate)
+- `http://127.0.0.1:8000/internal/` — internal ops dashboard and account
+  intake form, gated by `InternalOperator` or Django superuser bootstrap
+  access.
+- `http://127.0.0.1:8000/app/` — tenant-facing dashboard for active
+  `TenantMembership` users, with explicit tenant selection.
 
 **Postgres port note**: `docker-compose.yml` maps the container to host port
 **5433**, not the default 5432. This is deliberate — if your machine already
@@ -66,9 +71,10 @@ without any real TCB credentials at all (see below).
 python manage.py test
 ```
 
-25 tests as of this writing, all passing — covers the GS1 data-string
+32 tests as of this writing, all passing — covers the GS1 data-string
 encoder/parser, barcode rendering, the Google Wallet JWT signing, and the
-full TCB register→lock→deposit→redeem flow against the mock client.
+full TCB register→lock→deposit→redeem flow against the mock client, plus
+the first internal/tenant-facing UI access and tenant-isolation checks.
 
 ## Demo data
 
@@ -167,6 +173,10 @@ docs now live under segment folders — see
   lifecycle.
 - Tenant isolation at the middleware/service layer; invite-only SSO
   provisioning (adapter-level; no real OAuth credentials wired in yet).
+- First server-rendered UI slice: `/internal/` account intake creates a
+  tenant, TCB link, initial offer, channel config, and optional invite;
+  `/app/` lets active tenant members choose an account and view that
+  tenant's offers.
 
 **Not yet built:**
 - Real Google/Microsoft OAuth credentials — needs `SocialApp` records once
@@ -180,7 +190,8 @@ docs now live under segment folders — see
   synchronously today, which works for exercising the framework but isn't
   the final design (see the plan's TCB integration seam section for the
   intended batched/retried worker).
-- Tenant-switch view, CPG-facing dashboard/panel UI, DRF API endpoints.
+- Full CPG-facing dashboard/panel UI, DRF API endpoints, and polished invite
+  email flow.
 
 ## A note on the wider plan
 

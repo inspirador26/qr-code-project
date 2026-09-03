@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ tenant.name }} Dashboard{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-semibold tracking-normal">{{ tenant.name }}</h1>
+    <p class="mt-1 text-sm text-slate-600">Offer dashboard</p>
+  </div>
+  {% if memberships.count > 1 %}
+    <a href="{% url 'tenancy:tenant_select' %}" class="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Switch Account</a>
+  {% endif %}
+</div>
+
+<section>
+  <h2 class="mb-3 text-sm font-semibold uppercase tracking-normal text-slate-500">Offers</h2>
+  <div class="overflow-hidden rounded border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-100 text-left text-slate-600">
+        <tr>
+          <th class="px-4 py-3 font-medium">Offer</th>
+          <th class="px-4 py-3 font-medium">Status</th>
+          <th class="px-4 py-3 font-medium">Clips</th>
+          <th class="px-4 py-3 font-medium">Redemption Window</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for offer in offers %}
+          <tr>
+            <td class="px-4 py-3">
+              <div class="font-medium">{{ offer.title }}</div>
+              <div class="text-xs text-slate-500">{{ offer.offer_code }}</div>
+            </td>
+            <td class="px-4 py-3">{{ offer.get_status_display }}</td>
+            <td class="px-4 py-3">{{ offer.clips.count }} / {{ offer.max_clips }}</td>
+            <td class="px-4 py-3 text-slate-600">{{ offer.redemption_start_at|date:"Y-m-d" }} to {{ offer.redemption_end_at|date:"Y-m-d" }}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="4" class="px-4 py-6 text-slate-500">No offers for this account yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

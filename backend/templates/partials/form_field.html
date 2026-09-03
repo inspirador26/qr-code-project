@@ -1,0 +1,10 @@
+<div class="{% if field.field.widget.input_type == 'textarea' %}md:col-span-2{% endif %}">
+  <label for="{{ field.id_for_label }}" class="mb-1 block text-sm font-medium text-slate-700">{{ field.label }}</label>
+  {{ field }}
+  {% if field.help_text %}
+    <p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>
+  {% endif %}
+  {% for error in field.errors %}
+    <p class="mt-1 text-xs text-red-700">{{ error }}</p>
+  {% endfor %}
+</div>

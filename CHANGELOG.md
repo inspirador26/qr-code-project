@@ -14,6 +14,28 @@ Entry format:
 
 ---
 
+## 2026-09-03 — Codex (with Justin), Objective 2 UI slice
+
+- Added the first real server-rendered UI surfaces for Objective 2:
+  `/internal/` now has an internal ops dashboard and `/internal/accounts/new/`
+  account intake form, while `/app/` has a tenant-facing dashboard plus
+  explicit tenant selection at `/app/tenants/`.
+- The internal intake flow creates/updates a `Tenant`, authorized
+  `TcbManufacturerLink`, `gs1_8112_barcode` `DistributionChannel`, initial
+  partner-managed `Offer`, `OfferChannelConfig`, and optional invited
+  `TenantMembership`, then calls `register_and_lock_offer(offer)` through
+  the service layer. The TCB registration call is kept outside any atomic
+  wrapper so failure logs can survive, matching the backend policy.
+- Added tests for internal access gating, account intake creation, tenant
+  dashboard membership enforcement, explicit tenant switching, and tenant-
+  scoped offer visibility.
+- Added `.claude/skills/frontend/django-panel-ui/SKILL.md`, updated the
+  frontend segment decision log, refreshed the product/tenancy skill docs,
+  and documented the new `/internal/` and `/app/` screens in
+  `backend/README.md`.
+
+---
+
 ## 2026-09-03 — Codex (with Justin)
 
 - Added `python manage.py seed_demo_offer`, a Django management command under

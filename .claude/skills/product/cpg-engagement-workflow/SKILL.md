@@ -119,19 +119,23 @@ A digital-media-marketing-driven client engagement:
   "Not yet built") now has a concrete new requirement: abuse/fraud
   prevention, not just "build the happy path."
 
-## UI plan, by actor (not yet built)
+## UI plan, by actor (partially started 2026-09-03)
 
-**Internal sales/ops** (nothing like this exists today):
-- Client onboarding: create `Tenant`, capture settlement-provider info +
-  whether they're TCB-capable, track contract/agreement status.
-- Offer intake: receive the client's offer ID, trigger the TCB
-  lookup/verify, review pulled terms before activating.
+**Internal sales/ops** (first slice exists in `/internal/`):
+- Client onboarding: create `Tenant`, capture manufacturer/TCB link info,
+  create an initial partner-managed offer, and optionally create an invited
+  `TenantMembership`. Still missing settlement-provider capability capture
+  and contract/agreement tracking.
+- Offer intake: first slice creates a local partner-managed offer and locks
+  it through the mock-backed TCB service path. Still missing real client
+  offer-ID lookup/verify and review of pulled TCB terms.
 - Usage/billing dashboard: clip counts per client per offer per period —
   what an invoice gets built from.
 
-**CPG client panel** (extends the plan's existing "Panel UI" section):
-- Offer list/detail — status, TCB sync status, and for `client_managed`
-  offers, terms as last verified against TCB (read-only).
+**CPG client panel** (first slice exists in `/app/`):
+- Offer list/detail — a minimal tenant-scoped offer list exists; full detail
+  pages, TCB sync status, and read-only `client_managed` term display are
+  still missing.
 - Self-service "submit an offer ID" flow.
 - Distribution assets — download QR/barcode/link, or upload their own
   creative for us to composite/distribute.
