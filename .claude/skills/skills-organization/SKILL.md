@@ -62,6 +62,15 @@ second, unrelated skill in the same segment runs into the same thing.
 Format: newest entry on top, same style as `CHANGELOG.md` — date, what was
 decided or found, why, and what it affects.
 
+## Dossiers (new as of 2026-09-11)
+
+A segment with running code (currently just `backend/`) also gets a
+**`DOSSIER.md`** — a fixed-ten-section "what's the current state of this
+whole segment" front door, distinct from both the per-skill `SKILL.md`
+deep-dives and the segment's `DECISIONS_AND_ISSUES.md` log. See
+`DOCUMENTATION_POLICY.md` for the section list and update discipline, and
+`.claude/skills/backend/DOSSIER.md` for the first one.
+
 ## A caveat about invoking these skills
 
 Skills nested under a segment directory are still invoked by their own

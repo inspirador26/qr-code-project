@@ -14,6 +14,41 @@ Entry format:
 
 ---
 
+## 2026-09-11 — Claude (with Justin)
+
+- Discovered Cory's backend work (foundation, demo seeder, admin/tenant UI)
+  was sitting on unmerged feature branches, not `staging`. Merged
+  `feature/django-backend-foundation`, `feature/demo-offer-seeder`, and
+  `feature/separate-admin-ui-from-user-ui` into `staging` (clean fast-
+  forwards, no conflicts — turned out to be a linear stack).
+- While testing the merged UI locally: fixed a Redis port collision
+  (`docker-compose.yml`/`.env.example` now map Redis to host port 6380 —
+  6379 was taken by an unrelated project's container), and added a demo
+  tenant user + `TenantMembership` for local testing (see the
+  `TenantMembership.invited_email` gotcha below).
+- Added role-based post-login routing (`accounts/views.py`'s
+  `post_login_redirect` + `accounts/context_processors.py`'s `role_flags`):
+  superusers/`InternalOperator`s land on `/internal/`, active tenant
+  members on `/app/`, instead of everyone landing on the bare health-check
+  root. Gated the shared nav (`templates/base.html`) so normal tenant users
+  no longer see Internal/Admin links, and added a working logout button
+  (`ACCOUNT_LOGOUT_REDIRECT_URL` now sends you back to the login page).
+- Fast-forwarded `main` to match `staging` — `main` had zero commits
+  `staging` didn't already have (staging is a direct descendant), so this
+  was a no-conflict fast-forward, not a rewrite.
+- Known gap: `TenantMembership` has a `unique_together`-style constraint on
+  `(tenant, invited_email)` that doesn't exclude blank values, so two
+  memberships on the same tenant can't both leave `invited_email` empty —
+  hit this twice while seeding test users. Worth a real fix (nullable +
+  conditional unique constraint) rather than the workaround used here
+  (giving each a distinct placeholder value).
+- Adopted a documentation policy (`DOCUMENTATION_POLICY.md`): rewrote
+  `CLAUDE.md` into numbered, citable always-on rules; introduced
+  `changelog.d/` for per-branch changelog fragments going forward; added
+  the first app dossier at `.claude/skills/backend/DOSSIER.md`.
+
+---
+
 ## 2026-09-03 — Codex (with Justin), Objective 2 UI slice
 
 - Added the first real server-rendered UI surfaces for Objective 2:
