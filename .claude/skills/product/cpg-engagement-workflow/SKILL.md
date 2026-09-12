@@ -127,8 +127,9 @@ A digital-media-marketing-driven client engagement:
   `TenantMembership`. Still missing settlement-provider capability capture
   and contract/agreement tracking.
 - Offer intake: first slice creates a local partner-managed offer and locks
-  it through the mock-backed TCB service path. Still missing real client
-  offer-ID lookup/verify and review of pulled TCB terms.
+  it through the mock-backed TCB service path, both during account creation
+  and via `/internal/offers/new/` for existing tenants. Still missing real
+  client offer-ID lookup/verify and review of pulled TCB terms.
 - Usage/billing dashboard: clip counts per client per offer per period —
   what an invoice gets built from.
 
@@ -279,7 +280,9 @@ hardcoded tenant. Concretely, in scope for this milestone:
   confirm offers/clips stay scoped to the right tenant (ties back to the
   existing tenant-isolation guarantee — see `tenancy-and-auth` skill).
 - Add at least one `Offer` per account so the clip flow above has something
-  real to run against per tenant, rather than a single seeded offer.
+  real to run against per tenant, rather than a single seeded offer. The
+  internal ops surface can now add more offers to existing tenants via
+  `/internal/offers/new/`.
 
 This doesn't pull in the rest of the internal-ops UI plan (usage/billing
 dashboard, contract tracking, etc.) — just enough of the account layer to

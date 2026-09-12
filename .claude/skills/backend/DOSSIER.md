@@ -77,6 +77,11 @@ not something being incrementally migrated.
 - `/internal/` account intake + ops dashboard; `/app/` tenant dashboard +
   explicit tenant selection; role-based post-login redirect; role-gated
   nav; working logout.
+- `/internal/offers/new/` adds offers to an existing tenant, using the same
+  registration service as account intake. Dashboard links preselect the
+  account. Internal operators and superusers can use this form.
+- `/login/` and `/logout/` redirect to allauth; successful login still uses
+  the shared role-based router rather than sending everyone to `/app/`.
 - `python manage.py seed_demo_offer` for one-command demo data.
 
 **Built but not wired / read-only on purpose:**
@@ -86,6 +91,9 @@ not something being incrementally migrated.
 
 ## 6. Known issues
 
+- Offer intake uses the mock TCB lifecycle locally. Registration runs
+  outside an atomic transaction so failure logs survive; a failed request
+  can leave local intake rows behind for diagnosis/retry.
 - **`TenantMembership.invited_email` uniqueness bug.** The model has a
   `UniqueConstraint(fields=["tenant", "invited_email"])` that doesn't
   exclude blank values — two memberships on the same tenant can't both
@@ -122,6 +130,10 @@ not something being incrementally migrated.
 
 ## 8. Feature plans and ideas
 
+- Internal offer intake currently creates partner-managed digital GS1 8112
+  offers with fixed expiration. Client-managed intake, paper coupons, and
+  rolling-expiration controls are deferred; model choices alone do not
+  mean those workflows are exposed in the form.
 - Full CPG-facing dashboard/panel UI, DRF API endpoints, polished invite
   email flow — deferred past the MVP clip demo milestone.
 - Postgres Row-Level Security as defense-in-depth on top of the existing
@@ -146,8 +158,7 @@ not something being incrementally migrated.
    it locally (Postgres/Redis ports, env vars, gotchas).
 3. Check `changelog.d/` for any in-flight branch fragments touching this
    segment before assuming the dossier is fully current.
-4. Run `python manage.py test` before and after any change — 32 tests as
-   of 2026-09-11.
+4. Run `python manage.py test` before and after any change.
 5. Finishing a change here? Update this dossier's §5–§8, the relevant
    `DECISIONS_AND_ISSUES.md` entry if the decision matters beyond one
    feature, and the `changelog.d/<branch>.md` fragment — same commit as

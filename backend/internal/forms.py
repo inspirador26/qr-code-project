@@ -1,6 +1,25 @@
 from django import forms
 
-from tenancy.models import TenantMembership
+from tenancy.models import Tenant, TenantMembership
+
+
+def apply_panel_field_classes(form):
+    base_class = (
+        "block w-full rounded border border-slate-300 bg-white px-3 py-2 "
+        "text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-1 "
+        "focus:ring-slate-500"
+    )
+    for field in form.fields.values():
+        field.widget.attrs.setdefault("class", base_class)
+
+
+def clean_offer_limits(form):
+    cleaned = form.cleaned_data
+    total_circulation = cleaned.get("total_circulation")
+    max_clips = cleaned.get("max_clips")
+    if total_circulation and max_clips and max_clips > total_circulation:
+        form.add_error("max_clips", "Max clips must be less than or equal to total circulation.")
+    return cleaned
 
 
 class AccountIntakeForm(forms.Form):
@@ -44,18 +63,47 @@ class AccountIntakeForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        base_class = (
-            "block w-full rounded border border-slate-300 bg-white px-3 py-2 "
-            "text-sm shadow-sm focus:border-slate-500 focus:outline-none focus:ring-1 "
-            "focus:ring-slate-500"
-        )
-        for field in self.fields.values():
-            field.widget.attrs.setdefault("class", base_class)
+        apply_panel_field_classes(self)
 
     def clean(self):
         cleaned = super().clean()
-        total_circulation = cleaned.get("total_circulation")
-        max_clips = cleaned.get("max_clips")
-        if total_circulation and max_clips and max_clips > total_circulation:
-            self.add_error("max_clips", "Max clips must be less than or equal to total circulation.")
-        return cleaned
+        return clean_offer_limits(self)
+
+
+class OfferIntakeForm(forms.Form):
+    tenant = forms.ModelChoiceField(label="Account", queryset=Tenant.objects.none())
+
+    manufacturer_email_domain = forms.CharField(label="Manufacturer email domain", max_length=255)
+    brand_id = forms.CharField(label="TCB brand ID", max_length=64, required=False)
+
+    offer_title = forms.CharField(label="Offer title", max_length=255)
+    offer_description = forms.CharField(
+        label="Offer description",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+    coupon_funder_id = forms.RegexField(
+        label="Coupon funder ID",
+        regex=r"^\d{6,12}$",
+        max_length=12,
+        error_messages={"invalid": "Enter 6 to 12 digits."},
+    )
+    offer_code = forms.RegexField(
+        label="Offer code",
+        regex=r"^\d{6}$",
+        max_length=6,
+        error_messages={"invalid": "Enter exactly 6 digits."},
+    )
+    total_circulation = forms.IntegerField(label="Total circulation", min_value=1)
+    max_clips = forms.IntegerField(label="Max clips", min_value=1)
+    campaign_days = forms.IntegerField(label="Campaign days", min_value=1, initial=30)
+    redemption_days = forms.IntegerField(label="Redemption days", min_value=1, initial=60)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["tenant"].queryset = Tenant.objects.order_by("name")
+        apply_panel_field_classes(self)
+
+    def clean(self):
+        cleaned = super().clean()
+        return clean_offer_limits(self)

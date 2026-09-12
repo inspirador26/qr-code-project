@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.views.generic import RedirectView
 from django.urls import include, path
 
 from . import admin as admin_descriptions  # noqa: F401 — applies the admin app-list description patch on import
@@ -10,6 +11,8 @@ urlpatterns = [
     # points here by name) resolves — this is the shared post-login router:
     # same login page for everyone, role-based redirect after.
     path("post-login/", post_login_redirect, name="post_login_redirect"),
+    path("login/", RedirectView.as_view(pattern_name="account_login", permanent=False)),
+    path("logout/", RedirectView.as_view(pattern_name="account_logout", permanent=False)),
     path("accounts/", include("allauth.urls")),
     path("o/", include("oauth2_provider.urls", namespace="oauth2_provider")),
     path("internal/", include("internal.urls")),
