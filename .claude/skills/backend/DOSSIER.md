@@ -122,6 +122,11 @@ not something being incrementally migrated.
 
 ## 8. Feature plans and ideas
 
+- Design for masked/white-label consumer offer links (neutral shared
+  domain now, per-tenant custom domain later) and fixing the missing
+  "is this offer still active" guard before a TCB deposit — see
+  `.claude/skills/backend/consumer-offer-delivery/SKILL.md`. Design only,
+  not built yet.
 - Full CPG-facing dashboard/panel UI, DRF API endpoints, polished invite
   email flow — deferred past the MVP clip demo milestone.
 - Postgres Row-Level Security as defense-in-depth on top of the existing
