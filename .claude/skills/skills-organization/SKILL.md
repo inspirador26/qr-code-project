@@ -7,7 +7,7 @@ description: Policy for how this repo's .claude/skills/ directory is organized �
 
 This repo tracks living documentation as Claude Code **skills** under
 `.claude/skills/`, per-feature (architecture, known problems/solutions,
-TODOs — see `CLAUDE.md`). As of 2026-09-02, those skill docs are grouped
+TODOs — see `AGENTS.md`). As of 2026-09-02, those skill docs are grouped
 into **segment directories**, one per part of the system, instead of sitting
 flat. This doc is the policy for that grouping — read it before adding,
 moving, or renaming a skill.

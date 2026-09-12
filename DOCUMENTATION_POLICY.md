@@ -9,7 +9,7 @@ Two failure modes this guards against:
 - **The stale status file** — a hand-maintained "where we left off" doc
   that goes wrong silently, gets read first, and gets believed. Worse than
   having none. This project has no such file; see the "ask the repo" table
-  in `CLAUDE.md` instead.
+  in `AGENTS.md` instead.
 - **The merge-conflict-at-the-top problem** — if every branch appends to
   one shared file, every PR collides in the same spot. Solved here by
   `changelog.d/` (one file per branch, folded into `CHANGELOG.md` on merge).
@@ -22,22 +22,22 @@ and closing the one real gap (per-branch changelog fragments).
 
 | Concept | Generic name | What it is here |
 |---|---|---|
-| Tier 1 — always-on rules | `RULES.md` | `CLAUDE.md` (repo root, loaded every session) |
+| Tier 1 — always-on rules | `RULES.md` | `AGENTS.md` (repo root, cross-tool standard — Codex and others auto-load this name). `CLAUDE.md` is a one-line pointer to it, since Claude Code specifically looks for that filename. |
 | Tier 2 — deep reference per feature | `DOCS/<app>/<app>-notes.md` | `.claude/skills/<segment>/<skill>/SKILL.md` |
 | Tier 2 — why a decision was made | `DOCS/<app>/decisions.md` | `.claude/skills/<segment>/DECISIONS_AND_ISSUES.md` (per segment, not per app — see `skills-organization/SKILL.md`) |
 | Tier 2 — app state dossier | `DOCS/apps/<app>.md` | `.claude/skills/<segment>/DOSSIER.md` — **new**, one per app/segment that has running code (currently just `backend/`) |
 | Per-branch changelog fragment | `changelog.d/<branch>.md` | `changelog.d/<branch>.md` — **new as of this policy**, same convention |
 | Folded history | `DOCS/changelog.md` | `CHANGELOG.md` (already existed, already grepped not read) |
 
-## The numbering discipline (for `CLAUDE.md`)
+## The numbering discipline (for `AGENTS.md`)
 
-`CLAUDE.md`'s rule sections are numbered and may be cited from elsewhere
-(e.g. a skill doc saying "see `CLAUDE.md` §2"). **Never renumber** — a
+`AGENTS.md`'s rule sections are numbered and may be cited from elsewhere
+(e.g. a skill doc saying "see `AGENTS.md` §2"). **Never renumber** — a
 renumber leaves every citation pointing at the wrong rule while still
 reading perfectly. New rules are appended as the next free number, never
 inserted. Two branches adding a rule at the same time will both pick the
 next number and merge without complaint — before adding one, check
-`git log -1 --stat -- CLAUDE.md` on the branch you're merging into, and put
+`git log -1 --stat -- AGENTS.md` on the branch you're merging into, and put
 the addition in its own commit so a collision is a one-line resolve.
 
 ## The dossier — ten sections, same order every time

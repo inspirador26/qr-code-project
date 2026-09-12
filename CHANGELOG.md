@@ -42,10 +42,12 @@ Entry format:
   hit this twice while seeding test users. Worth a real fix (nullable +
   conditional unique constraint) rather than the workaround used here
   (giving each a distinct placeholder value).
-- Adopted a documentation policy (`DOCUMENTATION_POLICY.md`): rewrote
-  `CLAUDE.md` into numbered, citable always-on rules; introduced
-  `changelog.d/` for per-branch changelog fragments going forward; added
-  the first app dossier at `.claude/skills/backend/DOSSIER.md`.
+- Adopted a documentation policy (`DOCUMENTATION_POLICY.md`): numbered,
+  citable always-on rules now live in `AGENTS.md` (cross-tool standard,
+  since Cory uses Codex) with `CLAUDE.md` as a one-line pointer to it for
+  Claude Code's auto-load mechanism; introduced `changelog.d/` for
+  per-branch changelog fragments going forward; added the first app
+  dossier at `.claude/skills/backend/DOSSIER.md`.
 
 ---
 
