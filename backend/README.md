@@ -46,9 +46,9 @@ Then:
   each with a short description of what it's for right on the index page
   (see `config/admin.py` if you need to add/update one — it's a lookup dict,
   not per-model boilerplate)
-- `http://127.0.0.1:8000/internal/` — internal ops dashboard and account
-  intake form, gated by `InternalOperator` or Django superuser bootstrap
-  access.
+- `http://127.0.0.1:8000/internal/` — internal ops dashboard, account
+  intake form, and offer intake form for existing accounts, gated by
+  `InternalOperator` or Django superuser bootstrap access.
 - `http://127.0.0.1:8000/app/` — tenant-facing dashboard for active
   `TenantMembership` users, with explicit tenant selection.
 
@@ -71,7 +71,7 @@ without any real TCB credentials at all (see below).
 python manage.py test
 ```
 
-32 tests as of this writing, all passing — covers the GS1 data-string
+40 tests as of this writing, all passing — covers the GS1 data-string
 encoder/parser, barcode rendering, the Google Wallet JWT signing, and the
 full TCB register→lock→deposit→redeem flow against the mock client, plus
 the first internal/tenant-facing UI access and tenant-isolation checks.
@@ -175,6 +175,7 @@ docs now live under segment folders — see
   provisioning (adapter-level; no real OAuth credentials wired in yet).
 - First server-rendered UI slice: `/internal/` account intake creates a
   tenant, TCB link, initial offer, channel config, and optional invite;
+  `/internal/offers/new/` adds additional offers to existing tenants;
   `/app/` lets active tenant members choose an account and view that
   tenant's offers.
 
@@ -190,8 +191,8 @@ docs now live under segment folders — see
   synchronously today, which works for exercising the framework but isn't
   the final design (see the plan's TCB integration seam section for the
   intended batched/retried worker).
-- Full CPG-facing dashboard/panel UI, DRF API endpoints, and polished invite
-  email flow.
+- Full CPG-facing dashboard/panel UI, DRF API endpoints, polished invite
+  email flow, and self-service tenant offer submission.
 
 ## A note on the wider plan
 

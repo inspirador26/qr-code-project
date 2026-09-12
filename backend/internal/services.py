@@ -18,6 +18,14 @@ class AccountIntakeResult:
     membership: TenantMembership | None
 
 
+@dataclass(frozen=True)
+class OfferIntakeResult:
+    tenant: Tenant
+    offer: Offer
+    tcb_link: TcbManufacturerLink
+    channel: DistributionChannel
+
+
 def create_account_with_offer(*, data: dict, invited_by=None) -> AccountIntakeResult:
     tenant, _ = Tenant.objects.update_or_create(
         name=data["tenant_name"],
@@ -27,6 +35,32 @@ def create_account_with_offer(*, data: dict, invited_by=None) -> AccountIntakeRe
             "status": Tenant.Status.ACTIVE,
         },
     )
+
+    offer_result = create_offer_for_tenant(tenant=tenant, data=data)
+
+    membership = None
+    invite_email = data.get("invite_email")
+    if invite_email:
+        membership, _ = TenantMembership.objects.update_or_create(
+            tenant=tenant,
+            invited_email=invite_email,
+            defaults={
+                "role": data.get("invite_role") or TenantMembership.Role.ADMIN,
+                "status": TenantMembership.Status.INVITED,
+                "invited_by": invited_by,
+            },
+        )
+
+    return AccountIntakeResult(
+        tenant=tenant,
+        offer=offer_result.offer,
+        tcb_link=offer_result.tcb_link,
+        channel=offer_result.channel,
+        membership=membership,
+    )
+
+
+def create_offer_for_tenant(*, tenant: Tenant, data: dict) -> OfferIntakeResult:
     tcb_link, _ = TcbManufacturerLink.objects.update_or_create(
         tenant=tenant,
         manufacturer_email_domain=data["manufacturer_email_domain"],
@@ -81,28 +115,14 @@ def create_account_with_offer(*, data: dict, invited_by=None) -> AccountIntakeRe
         defaults={"config": {}},
     )
 
-    membership = None
-    invite_email = data.get("invite_email")
-    if invite_email:
-        membership, _ = TenantMembership.objects.update_or_create(
-            tenant=tenant,
-            invited_email=invite_email,
-            defaults={
-                "role": data.get("invite_role") or TenantMembership.Role.ADMIN,
-                "status": TenantMembership.Status.INVITED,
-                "invited_by": invited_by,
-            },
-        )
-
     # Keep this outside any atomic block: register_and_lock_offer writes TCB
     # logs that must survive raised exceptions.
     register_and_lock_offer(offer)
     offer.refresh_from_db()
 
-    return AccountIntakeResult(
+    return OfferIntakeResult(
         tenant=tenant,
         offer=offer,
         tcb_link=tcb_link,
         channel=channel,
-        membership=membership,
     )

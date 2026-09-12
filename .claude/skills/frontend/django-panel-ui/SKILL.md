@@ -26,6 +26,15 @@ Two surfaces must stay distinct:
 
 ## UI style
 
+The internal dashboard links to `/internal/accounts/new/` for a new
+account and initial offer, and `/internal/offers/new/` for an existing
+account. Per-account Add Offer links preselect the tenant. Both intake
+paths share the backend offer registration service.
+
+Allauth login returns through `post_login_redirect`: internal users land
+on `/internal/`, active tenant members on `/app/`. Keep that role-based
+routing and the shared navigation gates when extending either panel.
+
 Keep the product UI quiet and operational: dense tables, compact forms,
 plain headings, restrained borders, and predictable navigation. Avoid
 marketing-style hero layouts for app screens. Use server-side validation

@@ -8,6 +8,25 @@ an individual skill doc. Newest on top.
 
 ---
 
+## 2026-09-11 — preserve shared role routing when combining internal intake work
+
+**Decision/finding**: rebasing `feature/new-offer` onto `staging` exposed
+competing login defaults: the older feature sent everyone to `/app/`, while
+staging introduced `post_login_redirect`. Keep the role-based router and
+logout destination from staging, alongside the feature's allauth URL aliases.
+
+**Why it matters beyond one feature**: internal operators must land in the
+internal UI, while active tenant members land in the tenant panel. A fixed
+redirect to either surface breaks the other actor's login experience.
+
+**How to apply**: keep one shared post-login router. New internal offer
+intake stays under the internal-operator gate and calls
+`create_offer_for_tenant(tenant=..., data=...)` directly, without changing
+tenant session selection. Account intake reuses that same service; keep
+TCB registration outside atomic wrappers so failure logs survive.
+
+---
+
 ## 2026-09-02 — `/o/` prefix is already claimed, avoid it for new public routes
 
 **Decision/finding**: `config/urls.py` mounts `django-oauth-toolkit` at

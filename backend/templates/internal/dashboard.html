@@ -8,7 +8,10 @@
     <h1 class="text-2xl font-semibold tracking-normal">Internal Ops</h1>
     <p class="mt-1 text-sm text-slate-600">Accounts and offer intake</p>
   </div>
-  <a href="{% url 'internal:account_intake' %}" class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">New Account</a>
+  <div class="flex gap-2">
+    <a href="{% url 'internal:offer_intake' %}" class="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">New Offer</a>
+    <a href="{% url 'internal:account_intake' %}" class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">New Account</a>
+  </div>
 </div>
 
 <section class="mb-8">
@@ -21,6 +24,7 @@
           <th class="px-4 py-3 font-medium">Status</th>
           <th class="px-4 py-3 font-medium">Billing Contact</th>
           <th class="px-4 py-3 font-medium">Created</th>
+          <th class="px-4 py-3 font-medium"></th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
@@ -30,10 +34,13 @@
             <td class="px-4 py-3">{{ tenant.get_status_display }}</td>
             <td class="px-4 py-3">{{ tenant.billing_contact_email|default:"" }}</td>
             <td class="px-4 py-3 text-slate-500">{{ tenant.created_at|date:"Y-m-d" }}</td>
+            <td class="px-4 py-3 text-right">
+              <a href="{% url 'internal:offer_intake' %}?tenant={{ tenant.id }}" class="text-sm font-medium text-slate-700 hover:text-slate-950">Add Offer</a>
+            </td>
           </tr>
         {% empty %}
           <tr>
-            <td colspan="4" class="px-4 py-6 text-slate-500">No accounts yet.</td>
+            <td colspan="5" class="px-4 py-6 text-slate-500">No accounts yet.</td>
           </tr>
         {% endfor %}
       </tbody>

@@ -141,6 +141,7 @@ ACCOUNT_SIGNUP_FIELDS = ["email*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"  # identity is asserted by the SSO provider
 SOCIALACCOUNT_AUTO_SIGNUP = False  # enforced by our own invite-matching adapter
 SOCIALACCOUNT_ADAPTER = "accounts.adapters.InviteOnlySocialAccountAdapter"
+LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "post_login_redirect"  # role-based router, see accounts/views.py
 ACCOUNT_LOGOUT_REDIRECT_URL = "account_login"  # send you back to the login page, not "/"
 
