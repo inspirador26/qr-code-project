@@ -75,6 +75,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "accounts.context_processors.role_flags",
             ],
         },
     },
@@ -140,7 +141,8 @@ ACCOUNT_SIGNUP_FIELDS = ["email*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"  # identity is asserted by the SSO provider
 SOCIALACCOUNT_AUTO_SIGNUP = False  # enforced by our own invite-matching adapter
 SOCIALACCOUNT_ADAPTER = "accounts.adapters.InviteOnlySocialAccountAdapter"
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "post_login_redirect"  # role-based router, see accounts/views.py
+ACCOUNT_LOGOUT_REDIRECT_URL = "account_login"  # send you back to the login page, not "/"
 
 # --- TCB integration (platform-level credentials, not per-tenant) ----------
 # See backend/tcb_integration/ — one credential pair per TCB role.

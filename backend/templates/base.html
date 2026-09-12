@@ -17,12 +17,22 @@
       <a href="/app/" class="font-semibold">Coupon Platform</a>
       <nav class="flex items-center gap-4 text-sm text-slate-600">
         {% if request.user.is_authenticated %}
-          <a href="/app/" class="hover:text-slate-950">Dashboard</a>
-          <a href="/internal/" class="hover:text-slate-950">Internal</a>
-          <a href="/admin/" class="hover:text-slate-950">Admin</a>
+          {% if has_tenant_access %}
+            <a href="/app/" class="hover:text-slate-950">Dashboard</a>
+          {% endif %}
+          {% if is_internal_operator %}
+            <a href="/internal/" class="hover:text-slate-950">Internal</a>
+            <a href="/admin/" class="hover:text-slate-950">Admin</a>
+          {% endif %}
         {% endif %}
         {% if request.tenant %}
           <span class="rounded border border-slate-200 px-2 py-1 text-slate-500">{{ request.tenant.name }}</span>
+        {% endif %}
+        {% if request.user.is_authenticated %}
+          <form method="post" action="{% url 'account_logout' %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="hover:text-slate-950">Log out</button>
+          </form>
         {% endif %}
       </nav>
     </div>

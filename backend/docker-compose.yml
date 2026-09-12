@@ -16,7 +16,10 @@ services:
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      # Host port 6380, not 6379 — this machine already runs another
+      # project's Redis container on 6379; mapping there would collide
+      # with it instead of binding cleanly.
+      - "6380:6379"
 
 volumes:
   postgres_data:
