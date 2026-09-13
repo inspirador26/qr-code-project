@@ -8,8 +8,8 @@ from offers.models import Offer
 from tcb_integration.exceptions import TcbApiError
 from tenancy.models import Tenant
 
-from .forms import AccountIntakeForm
-from .services import create_account_with_offer
+from .forms import AccountIntakeForm, OfferIntakeForm
+from .services import create_account_with_offer, create_offer_for_tenant
 
 
 def _is_internal_operator(user) -> bool:
@@ -64,3 +64,34 @@ def account_intake(request):
             }
         )
     return render(request, "internal/account_intake.html", {"form": form})
+
+
+@internal_operator_required
+def offer_intake(request):
+    if request.method == "POST":
+        form = OfferIntakeForm(request.POST)
+        if form.is_valid():
+            try:
+                result = create_offer_for_tenant(
+                    tenant=form.cleaned_data["tenant"],
+                    data=form.cleaned_data,
+                )
+            except (TcbApiError, ValueError) as exc:
+                form.add_error(None, str(exc))
+            else:
+                messages.success(
+                    request,
+                    f"Added and locked offer {result.offer.title} for {result.tenant.name}.",
+                )
+                return redirect("internal:dashboard")
+    else:
+        form = OfferIntakeForm(
+            initial={
+                "tenant": request.GET.get("tenant"),
+                "coupon_funder_id": "123456789012",
+                "offer_code": "000001",
+                "total_circulation": 1000,
+                "max_clips": 1000,
+            }
+        )
+    return render(request, "internal/offer_intake.html", {"form": form})

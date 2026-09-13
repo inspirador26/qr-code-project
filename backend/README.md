@@ -39,9 +39,9 @@ Then:
   each with a short description of what it's for right on the index page
   (see `config/admin.py` if you need to add/update one — it's a lookup dict,
   not per-model boilerplate)
-- `http://127.0.0.1:8000/internal/` — internal ops dashboard and account
-  intake form, gated by `InternalOperator` or Django superuser bootstrap
-  access.
+- `http://127.0.0.1:8000/internal/` — internal ops dashboard, account
+  intake form, and offer intake form for existing accounts, gated by
+  `InternalOperator` or Django superuser bootstrap access.
 - `http://127.0.0.1:8000/app/` — tenant-facing dashboard for active
   `TenantMembership` users, with explicit tenant selection.
 
@@ -65,7 +65,7 @@ without any real TCB credentials at all (see
 python manage.py test
 ```
 
-32 tests as of this writing, all passing — covers the GS1 data-string
+40 tests as of this writing, all passing — covers the GS1 data-string
 encoder/parser, barcode rendering, the Google Wallet JWT signing, and the
 full TCB register→lock→deposit→redeem flow against the mock client, plus
 the first internal/tenant-facing UI access and tenant-isolation checks.
