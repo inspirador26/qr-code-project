@@ -122,7 +122,8 @@ not something being incrementally migrated.
   exist (`gs1`, `tcb_integration.services`, `CouponClip`) but nothing ties
   them together yet. Left for last because it's the actual MVP demo
   centerpiece and needed the foundation pieces done first — see
-  `backend/docs/HANDOFF_offer_clip_flow.md`.
+  `.claude/skills/backend/tcb-integration/SKILL.md`'s "Current milestone"
+  section and `.claude/skills/backend/consumer-offer-delivery/SKILL.md`.
 - Celery-driven async outbox worker — `issue_and_deposit_clip` deposits
   synchronously today; fine for exercising the framework, not the final
   design.
@@ -130,12 +131,18 @@ not something being incrementally migrated.
 
 ## 8. Feature plans and ideas
 
+- Design for masked/white-label consumer offer links (neutral shared
+  domain now, per-tenant custom domain later) and fixing the missing
+  "is this offer still active" guard before a TCB deposit — see
+  `.claude/skills/backend/consumer-offer-delivery/SKILL.md`. Design only,
+  not built yet.
 - Internal offer intake currently creates partner-managed digital GS1 8112
   offers with fixed expiration. Client-managed intake, paper coupons, and
   rolling-expiration controls are deferred; model choices alone do not
   mean those workflows are exposed in the form.
 - Full CPG-facing dashboard/panel UI, DRF API endpoints, polished invite
-  email flow — deferred past the MVP clip demo milestone.
+  email flow, and self-service tenant offer submission — deferred past the
+  MVP clip demo milestone.
 - Postgres Row-Level Security as defense-in-depth on top of the existing
   ORM/service-layer tenant isolation — not urgent while the ORM-layer
   enforcement holds, but the stated ceiling before this is "done."

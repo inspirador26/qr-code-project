@@ -11,7 +11,7 @@ on top.
 ## 2026-08-22 — the Node POC is a behavioral reference only, not being migrated
 
 **Decision**: active development moved to the Django backend at `backend/`
-(see `LLM_HANDOFF.md`'s superseded notice and `CHANGELOG.md` 2026-08-22
+(see `backend/README.md`'s opening note and `CHANGELOG.md` 2026-08-22
 entries for the full narrative). `server.js` stays in the repo only to
 answer "how did the old version do X" — it is not being incrementally
 ported, and no new feature work should land there.

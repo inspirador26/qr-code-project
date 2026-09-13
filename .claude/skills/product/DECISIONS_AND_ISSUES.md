@@ -14,8 +14,7 @@ Newest on top.
 expanded to require creating multiple `Tenant` accounts and adding offers
 under each, not just proving the clip→barcode loop against one hardcoded
 tenant. Full detail lives in `product/cpg-engagement-workflow/SKILL.md`'s
-"Immediate next milestone" section (2026-09-02 update) and
-`LLM_HANDOFF.md`'s "Partner handoff — objectives" section.
+"Immediate next milestone" section (2026-09-02 update).
 
 **Why it matters beyond one skill doc**: this reframes the MVP milestone
 referenced from multiple places (`backend/README.md`,
