@@ -1,14 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import InternalOperator
 from offers.models import Offer
 from tcb_integration.exceptions import TcbApiError
 from tenancy.models import Tenant
 
-from .forms import AccountIntakeForm, OfferIntakeForm
+from .forms import AccountIntakeForm, OfferEditForm, OfferIntakeForm
 from .services import create_account_with_offer, create_offer_for_tenant
 
 
@@ -36,6 +36,54 @@ def dashboard(request):
         request,
         "internal/dashboard.html",
         {"tenants": tenants, "recent_offers": recent_offers},
+    )
+
+
+@internal_operator_required
+def offer_detail(request, offer_id):
+    offer = get_object_or_404(
+        Offer.objects.select_related("tenant", "tcb_manufacturer_link"),
+        id=offer_id,
+    )
+    return render(
+        request,
+        "offers/detail.html",
+        {
+            "offer": offer,
+            "back_url": "internal:dashboard",
+            "edit_url": "internal:offer_edit",
+            "can_edit": offer.ownership_mode == Offer.OwnershipMode.PARTNER_MANAGED,
+            "show_internal_data": True,
+            "sync_logs": offer.tcb_sync_logs.order_by("-created_at")[:10],
+            "clip_count": offer.clips.count(),
+            "redemption_count": offer.clips.filter(state="redeemed").count(),
+        },
+    )
+
+
+@internal_operator_required
+def offer_edit(request, offer_id):
+    offer = get_object_or_404(Offer.objects.select_related("tenant"), id=offer_id)
+    if offer.ownership_mode != Offer.OwnershipMode.PARTNER_MANAGED:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = OfferEditForm(request.POST, instance=offer)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Updated offer {offer.title}.")
+            return redirect("internal:offer_detail", offer_id=offer.id)
+    else:
+        form = OfferEditForm(instance=offer)
+
+    return render(
+        request,
+        "offers/edit.html",
+        {
+            "offer": offer,
+            "form": form,
+            "detail_url": "internal:offer_detail",
+        },
     )
 
 

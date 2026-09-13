@@ -11,6 +11,26 @@ from once building starts.
 
 ---
 
+## 2026-09-12 — Offer lists stay compact; details and editing use dedicated pages
+
+**Decision**: keep the internal and tenant offer tables as summaries, but
+make offer titles link to full detail pages. Internal operators and tenant
+Admin/Editor members can edit partner-managed offers; tenant Viewers are
+read-only, and every tenant lookup is filtered by the selected tenant.
+
+**Locked-data boundary**: offer identity fields are never edited from the
+detail flow. After an offer leaves Draft, TCB-controlled terms are displayed
+but disabled because the app has no verified MOF update workflow. The local
+display title and distribution cap remain editable. `client_managed` offers
+are fully read-only because their external Authorized Partner owns the MOF.
+
+**Why**: a dense table should not try to contain every offer field, but every
+authorized user still needs a discoverable path to all appropriate data.
+Disabling fields in the server-side form as well as the UI prevents crafted
+POST requests from bypassing the lifecycle boundary.
+
+---
+
 ## 2026-09-03 — First UI slice is server-rendered Django templates
 
 **Decision**: the first Objective 2 UI work uses Django templates under

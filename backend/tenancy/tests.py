@@ -83,7 +83,54 @@ class TenantDashboardTests(TestCase):
 
         self.assertContains(response, "Visible Offer")
         self.assertNotContains(response, "Hidden Offer")
+        self.assertContains(response, reverse("tenancy:offer_detail", args=[self.visible_offer.id]))
         self.assertEqual(self.client.session["active_tenant_id"], str(self.tenant.id))
+
+    def test_offer_detail_is_tenant_scoped(self):
+        self.client.login(email=self.user.email, password="test-pass-123")
+        session = self.client.session
+        session["active_tenant_id"] = str(self.tenant.id)
+        session.save()
+
+        visible = self.client.get(reverse("tenancy:offer_detail", args=[self.visible_offer.id]))
+        hidden_offer = Offer.objects.get(tenant=self.other_tenant)
+        hidden = self.client.get(reverse("tenancy:offer_detail", args=[hidden_offer.id]))
+
+        self.assertEqual(visible.status_code, 200)
+        self.assertContains(visible, "Visible Offer")
+        self.assertContains(visible, reverse("tenancy:offer_edit", args=[self.visible_offer.id]))
+        self.assertEqual(hidden.status_code, 404)
+
+    def test_viewer_can_view_but_cannot_edit_offer(self):
+        membership = TenantMembership.objects.get(tenant=self.tenant, user=self.user)
+        membership.role = TenantMembership.Role.VIEWER
+        membership.save(update_fields=["role"])
+        self.client.login(email=self.user.email, password="test-pass-123")
+        session = self.client.session
+        session["active_tenant_id"] = str(self.tenant.id)
+        session.save()
+
+        detail = self.client.get(reverse("tenancy:offer_detail", args=[self.visible_offer.id]))
+        edit = self.client.get(reverse("tenancy:offer_edit", args=[self.visible_offer.id]))
+
+        self.assertEqual(detail.status_code, 200)
+        self.assertNotContains(detail, reverse("tenancy:offer_edit", args=[self.visible_offer.id]))
+        self.assertEqual(edit.status_code, 403)
+
+    def test_client_managed_offer_is_read_only_for_tenant_admin(self):
+        self.visible_offer.ownership_mode = Offer.OwnershipMode.CLIENT_MANAGED
+        self.visible_offer.save(update_fields=["ownership_mode"])
+        self.client.login(email=self.user.email, password="test-pass-123")
+        session = self.client.session
+        session["active_tenant_id"] = str(self.tenant.id)
+        session.save()
+
+        detail = self.client.get(reverse("tenancy:offer_detail", args=[self.visible_offer.id]))
+        edit = self.client.get(reverse("tenancy:offer_edit", args=[self.visible_offer.id]))
+
+        self.assertEqual(detail.status_code, 200)
+        self.assertNotContains(detail, reverse("tenancy:offer_edit", args=[self.visible_offer.id]))
+        self.assertEqual(edit.status_code, 403)
 
     def test_user_can_switch_between_active_tenants(self):
         TenantMembership.objects.create(

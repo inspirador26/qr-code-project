@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}{{ offer.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-start justify-between gap-4">
+  <div>
+    <a href="{% url back_url %}" class="text-sm text-slate-500 hover:text-slate-900">Back to offers</a>
+    <h1 class="mt-2 text-2xl font-semibold tracking-normal">{{ offer.title }}</h1>
+    <p class="mt-1 text-sm text-slate-600">{{ offer.tenant.name }} · {{ offer.get_status_display }}</p>
+  </div>
+  {% if can_edit %}
+    <a href="{% url edit_url offer.id %}" class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Edit offer</a>
+  {% endif %}
+</div>
+
+{% if offer.status != "draft" %}
+  <div class="mb-6 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    This offer has been submitted to TCB. TCB-controlled identifiers and terms are read-only here.
+  </div>
+{% elif offer.ownership_mode == "client_managed" %}
+  <div class="mb-6 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    This offer is managed by the client's Authorized Partner, so its TCB terms are read-only here.
+  </div>
+{% endif %}
+
+<div class="grid gap-6 lg:grid-cols-2">
+  <section class="rounded border border-slate-200 bg-white p-4">
+    <h2 class="mb-4 text-sm font-semibold uppercase tracking-normal text-slate-500">Offer</h2>
+    <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+      <div class="sm:col-span-2"><dt class="text-slate-500">Description</dt><dd class="mt-1 whitespace-pre-wrap">{{ offer.description|default:"—" }}</dd></div>
+      <div><dt class="text-slate-500">Status</dt><dd class="mt-1">{{ offer.get_status_display }}</dd></div>
+      <div><dt class="text-slate-500">Ownership</dt><dd class="mt-1">{{ offer.get_ownership_mode_display }}</dd></div>
+      <div><dt class="text-slate-500">Coupon format</dt><dd class="mt-1">{{ offer.get_coupon_format_display }}</dd></div>
+      <div><dt class="text-slate-500">Offer code</dt><dd class="mt-1 font-mono">{{ offer.offer_code }}</dd></div>
+      <div><dt class="text-slate-500">Coupon funder ID</dt><dd class="mt-1 font-mono">{{ offer.coupon_funder_id }}</dd></div>
+      <div class="sm:col-span-2"><dt class="text-slate-500">Base GS1</dt><dd class="mt-1 break-all font-mono text-xs">{{ offer.base_gs1 }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="rounded border border-slate-200 bg-white p-4">
+    <h2 class="mb-4 text-sm font-semibold uppercase tracking-normal text-slate-500">Schedule</h2>
+    <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+      <div><dt class="text-slate-500">Campaign starts</dt><dd class="mt-1">{{ offer.campaign_start_at|date:"Y-m-d H:i T" }}</dd></div>
+      <div><dt class="text-slate-500">Campaign ends</dt><dd class="mt-1">{{ offer.campaign_end_at|date:"Y-m-d H:i T" }}</dd></div>
+      <div><dt class="text-slate-500">Redemption starts</dt><dd class="mt-1">{{ offer.redemption_start_at|date:"Y-m-d H:i T" }}</dd></div>
+      <div><dt class="text-slate-500">Redemption ends</dt><dd class="mt-1">{{ offer.redemption_end_at|date:"Y-m-d H:i T" }}</dd></div>
+      <div><dt class="text-slate-500">Rolling expiration</dt><dd class="mt-1">{{ offer.rolling_expiration|yesno:"Yes,No" }}</dd></div>
+      <div><dt class="text-slate-500">Rolling expiration days</dt><dd class="mt-1">{{ offer.rolling_expiration_days|default:"—" }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="rounded border border-slate-200 bg-white p-4">
+    <h2 class="mb-4 text-sm font-semibold uppercase tracking-normal text-slate-500">Distribution and usage</h2>
+    <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+      <div><dt class="text-slate-500">Total circulation</dt><dd class="mt-1">{{ offer.total_circulation }}</dd></div>
+      <div><dt class="text-slate-500">Distribution cap</dt><dd class="mt-1">{{ offer.max_clips }}</dd></div>
+      <div><dt class="text-slate-500">Clips issued</dt><dd class="mt-1">{{ clip_count }}</dd></div>
+      <div><dt class="text-slate-500">Redemptions</dt><dd class="mt-1">{{ redemption_count }}</dd></div>
+    </dl>
+    <div class="mt-4 border-t border-slate-100 pt-4">
+      <h3 class="text-sm font-medium">Channels</h3>
+      <ul class="mt-2 space-y-2 text-sm">
+        {% for channel_config in offer.channel_configs.all %}
+          <li>
+            <span class="font-medium">{{ channel_config.channel.display_name }}</span>
+            <span class="text-slate-500">({{ channel_config.channel.code }})</span>
+            {% if channel_config.config %}
+              <pre class="mt-1 overflow-x-auto whitespace-pre-wrap break-words rounded bg-slate-50 p-2 text-xs text-slate-600">{{ channel_config.config|pprint }}</pre>
+            {% endif %}
+          </li>
+        {% empty %}
+          <li class="text-slate-500">No distribution channels configured.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </section>
+
+  <section class="rounded border border-slate-200 bg-white p-4">
+    <h2 class="mb-4 text-sm font-semibold uppercase tracking-normal text-slate-500">TCB connection</h2>
+    <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+      <div><dt class="text-slate-500">Manufacturer domain</dt><dd class="mt-1">{{ offer.tcb_manufacturer_link.manufacturer_email_domain }}</dd></div>
+      <div><dt class="text-slate-500">Brand ID</dt><dd class="mt-1">{{ offer.tcb_manufacturer_link.brand_id|default:"—" }}</dd></div>
+      <div><dt class="text-slate-500">Connection status</dt><dd class="mt-1">{{ offer.tcb_manufacturer_link.get_connection_status_display }}</dd></div>
+      <div><dt class="text-slate-500">Verified</dt><dd class="mt-1">{{ offer.tcb_manufacturer_link.verified_at|date:"Y-m-d H:i T"|default:"—" }}</dd></div>
+    </dl>
+  </section>
+</div>
+
+<section class="mt-6 rounded border border-slate-200 bg-white p-4">
+  <h2 class="mb-4 text-sm font-semibold uppercase tracking-normal text-slate-500">Master Offer File data</h2>
+  <pre class="overflow-x-auto whitespace-pre-wrap break-words rounded bg-slate-50 p-3 text-xs text-slate-700">{{ offer.mof_snapshot|pprint }}</pre>
+</section>
+
+<section class="mt-6 rounded border border-slate-200 bg-white p-4">
+  <h2 class="mb-4 text-sm font-semibold uppercase tracking-normal text-slate-500">TCB synchronization</h2>
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="text-left text-slate-500"><tr><th class="pb-2 pr-4 font-medium">Operation</th><th class="pb-2 pr-4 font-medium">Status</th><th class="pb-2 pr-4 font-medium">Attempts</th><th class="pb-2 font-medium">Updated</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for log in sync_logs %}
+          <tr><td class="py-2 pr-4">{{ log.get_operation_display }}</td><td class="py-2 pr-4">{{ log.get_status_display }}</td><td class="py-2 pr-4">{{ log.attempt_count }}</td><td class="py-2">{{ log.updated_at|date:"Y-m-d H:i T" }}</td></tr>
+        {% empty %}
+          <tr><td colspan="4" class="py-3 text-slate-500">No TCB synchronization history.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if show_internal_data %}
+  <section class="mt-6 rounded border border-slate-200 bg-white p-4">
+    <h2 class="mb-4 text-sm font-semibold uppercase tracking-normal text-slate-500">Internal record</h2>
+    <dl class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+      <div><dt class="text-slate-500">Offer ID</dt><dd class="mt-1 break-all font-mono text-xs">{{ offer.id }}</dd></div>
+      <div><dt class="text-slate-500">Created</dt><dd class="mt-1">{{ offer.created_at|date:"Y-m-d H:i T" }}</dd></div>
+      <div><dt class="text-slate-500">Updated</dt><dd class="mt-1">{{ offer.updated_at|date:"Y-m-d H:i T" }}</dd></div>
+    </dl>
+  </section>
+{% endif %}
+{% endblock %}

@@ -75,6 +75,8 @@ class InternalUiTests(TestCase):
         channel = DistributionChannel.objects.get(code="gs1_8112_barcode")
         offer = Offer.objects.get(tenant=tenant, offer_code="000002")
 
+        self.assertEqual(offer.coupon_format, Offer.CouponFormat.DIGITAL)
+        self.assertEqual(offer.base_gs1, build_base_data_string("0", "123456789013", "000002"))
         self.assertEqual(offer.status, Offer.Status.LOCKED)
         self.assertEqual(offer.tcb_manufacturer_link.manufacturer_email_domain, "new-demo.example")
         self.assertTrue(OfferChannelConfig.objects.filter(offer=offer, channel=channel).exists())
@@ -85,6 +87,15 @@ class InternalUiTests(TestCase):
                 status=TenantMembership.Status.INVITED,
             ).exists()
         )
+
+    def test_intake_pages_do_not_expose_coupon_format(self):
+        self.client.force_login(self.operator)
+        for route in ("internal:account_intake", "internal:offer_intake"):
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertEqual(response.status_code, 200)
+                self.assertNotIn("coupon_format", response.context["form"].fields)
+                self.assertNotContains(response, 'name="coupon_format"')
 
     def test_offer_intake_creates_offer_for_existing_tenant(self):
         tenant = Tenant.objects.create(
@@ -100,6 +111,8 @@ class InternalUiTests(TestCase):
                 "tenant": str(tenant.id),
                 "manufacturer_email_domain": "existing-demo.example",
                 "brand_id": "brand-789",
+                # Intake remains digital even if a caller submits a paper format.
+                "coupon_format": Offer.CouponFormat.PAPER,
                 "offer_title": "Save $3 on Demo Chips",
                 "offer_description": "Second offer for an existing account.",
                 "coupon_funder_id": "123456789015",
@@ -115,6 +128,8 @@ class InternalUiTests(TestCase):
         channel = DistributionChannel.objects.get(code="gs1_8112_barcode")
         offer = Offer.objects.get(tenant=tenant, offer_code="000004")
 
+        self.assertEqual(offer.coupon_format, Offer.CouponFormat.DIGITAL)
+        self.assertEqual(offer.base_gs1, build_base_data_string("0", "123456789015", "000004"))
         self.assertEqual(offer.status, Offer.Status.LOCKED)
         self.assertEqual(offer.title, "Save $3 on Demo Chips")
         self.assertEqual(offer.tcb_manufacturer_link.manufacturer_email_domain, "existing-demo.example")
@@ -147,7 +162,7 @@ class InternalUiTests(TestCase):
             manufacturer_email_domain="existing.example",
         )
         now = timezone.now()
-        Offer.objects.create(
+        offer = Offer.objects.create(
             tenant=tenant,
             tcb_manufacturer_link=link,
             ownership_mode=Offer.OwnershipMode.PARTNER_MANAGED,
@@ -168,3 +183,87 @@ class InternalUiTests(TestCase):
 
         self.assertContains(response, "Existing CPG")
         self.assertContains(response, "Existing Offer")
+        self.assertContains(response, reverse("internal:offer_detail", args=[offer.id]))
+
+    def test_offer_detail_shows_full_offer_data(self):
+        tenant = Tenant.objects.create(name="Detail CPG")
+        link = TcbManufacturerLink.objects.create(
+            tenant=tenant,
+            manufacturer_email_domain="detail.example",
+            brand_id="brand-detail",
+            connection_status=TcbManufacturerLink.ConnectionStatus.AUTHORIZED,
+        )
+        now = timezone.now()
+        offer = Offer.objects.create(
+            tenant=tenant,
+            tcb_manufacturer_link=link,
+            ownership_mode=Offer.OwnershipMode.PARTNER_MANAGED,
+            coupon_funder_id="123456789017",
+            offer_code="000006",
+            base_gs1=build_base_data_string("0", "123456789017", "000006"),
+            title="Detailed Offer",
+            description="Every visible detail.",
+            campaign_start_at=now,
+            campaign_end_at=now + timedelta(days=30),
+            redemption_start_at=now,
+            redemption_end_at=now + timedelta(days=60),
+            total_circulation=200,
+            max_clips=150,
+            status=Offer.Status.LOCKED,
+        )
+        self.client.login(email=self.operator.email, password="test-pass-123")
+
+        response = self.client.get(reverse("internal:offer_detail", args=[offer.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Detailed Offer")
+        self.assertContains(response, "123456789017")
+        self.assertContains(response, "brand-detail")
+        self.assertContains(response, reverse("internal:offer_edit", args=[offer.id]))
+
+    def test_locked_offer_edit_preserves_tcb_controlled_fields(self):
+        tenant = Tenant.objects.create(name="Locked CPG")
+        link = TcbManufacturerLink.objects.create(
+            tenant=tenant,
+            manufacturer_email_domain="locked.example",
+        )
+        now = timezone.now()
+        offer = Offer.objects.create(
+            tenant=tenant,
+            tcb_manufacturer_link=link,
+            ownership_mode=Offer.OwnershipMode.PARTNER_MANAGED,
+            coupon_funder_id="123456789018",
+            offer_code="000007",
+            base_gs1=build_base_data_string("0", "123456789018", "000007"),
+            title="Before",
+            description="TCB description",
+            campaign_start_at=now,
+            campaign_end_at=now + timedelta(days=30),
+            redemption_start_at=now,
+            redemption_end_at=now + timedelta(days=60),
+            total_circulation=200,
+            max_clips=150,
+            status=Offer.Status.LOCKED,
+        )
+        self.client.login(email=self.operator.email, password="test-pass-123")
+
+        response = self.client.post(
+            reverse("internal:offer_edit", args=[offer.id]),
+            data={
+                "title": "After",
+                "description": "Attempted overwrite",
+                "campaign_start_at": (now + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M"),
+                "campaign_end_at": (now + timedelta(days=10)).strftime("%Y-%m-%dT%H:%M"),
+                "redemption_start_at": (now + timedelta(days=5)).strftime("%Y-%m-%dT%H:%M"),
+                "redemption_end_at": (now + timedelta(days=15)).strftime("%Y-%m-%dT%H:%M"),
+                "total_circulation": 999,
+                "max_clips": 175,
+            },
+        )
+
+        self.assertRedirects(response, reverse("internal:offer_detail", args=[offer.id]))
+        offer.refresh_from_db()
+        self.assertEqual(offer.title, "After")
+        self.assertEqual(offer.max_clips, 175)
+        self.assertEqual(offer.description, "TCB description")
+        self.assertEqual(offer.total_circulation, 200)

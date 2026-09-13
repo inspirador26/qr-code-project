@@ -31,6 +31,16 @@ account and initial offer, and `/internal/offers/new/` for an existing
 account. Per-account Add Offer links preselect the tenant. Both intake
 paths share the backend offer registration service.
 
+Offer titles in both dashboards link to a shared full-detail presentation.
+The internal route may resolve offers across tenants only behind the
+internal-operator gate; the tenant route always filters by the explicitly
+selected active tenant. Tenant Admin and Editor memberships can edit
+eligible partner-managed offers, while Viewer memberships are read-only.
+`client_managed` offers are read-only for every panel user. Once an offer
+leaves Draft, identity and TCB-controlled terms remain visible but disabled;
+only the local display title and distribution cap may be changed until a
+verified TCB Master Offer File update workflow is built.
+
 Allauth login returns through `post_login_redirect`: internal users land
 on `/internal/`, active tenant members on `/app/`. Keep that role-based
 routing and the shared navigation gates when extending either panel.

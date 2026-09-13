@@ -9,8 +9,12 @@
     <p class="mt-1 text-sm text-slate-600">Accounts and offer intake</p>
   </div>
   <div class="flex gap-2">
-    <a href="{% url 'internal:offer_intake' %}" class="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">New Offer</a>
-    <a href="{% url 'internal:account_intake' %}" class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">New Account</a>
+    <a href="{% url 'internal:offer_intake' %}" 
+        class="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+    >New Offer</a>
+    <a href="{% url 'internal:account_intake' %}" 
+        class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+    >New Account</a>
   </div>
 </div>
 
@@ -63,7 +67,9 @@
       <tbody class="divide-y divide-slate-100">
         {% for offer in recent_offers %}
           <tr>
-            <td class="px-4 py-3 font-medium">{{ offer.title }}</td>
+            <td class="px-4 py-3 font-medium">
+              <a href="{% url 'internal:offer_detail' offer.id %}" class="text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-slate-950 hover:decoration-slate-700">{{ offer.title }}</a>
+            </td>
             <td class="px-4 py-3">{{ offer.tenant.name }}</td>
             <td class="px-4 py-3">{{ offer.get_status_display }}</td>
             <td class="px-4 py-3 font-mono text-xs text-slate-600">{{ offer.base_gs1 }}</td>

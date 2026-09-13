@@ -80,6 +80,12 @@ not something being incrementally migrated.
 - `/internal/offers/new/` adds offers to an existing tenant, using the same
   registration service as account intake. Dashboard links preselect the
   account. Internal operators and superusers can use this form.
+- Offer titles in both `/internal/` and `/app/` link to tenant-safe detail
+  pages showing identifiers, schedules, circulation/usage, TCB connection,
+  channel configuration, MOF data, and sync status. Internal operators and
+  tenant Admin/Editor members may edit partner-managed offers; Viewers are
+  read-only. After an offer leaves Draft, TCB-controlled terms are disabled
+  and only the local title and distribution cap remain editable.
 - `/login/` and `/logout/` redirect to allauth; successful login still uses
   the shared role-based router rather than sending everyone to `/app/`.
 - `python manage.py seed_demo_offer` for one-command demo data.
@@ -94,6 +100,10 @@ not something being incrementally migrated.
 - Offer intake uses the mock TCB lifecycle locally. Registration runs
   outside an atomic transaction so failure logs survive; a failed request
   can leave local intake rows behind for diagnosis/retry.
+- Locked-offer editing intentionally does not expose TCB-controlled terms.
+  A verified MOF update workflow does not exist yet; enabling those fields
+  would let local records drift from TCB. `client_managed` offers are fully
+  read-only because their Authorized Partner is the source of truth.
 - **`TenantMembership.invited_email` uniqueness bug.** The model has a
   `UniqueConstraint(fields=["tenant", "invited_email"])` that doesn't
   exclude blank values — two memberships on the same tenant can't both
@@ -137,8 +147,10 @@ not something being incrementally migrated.
   `.claude/skills/backend/consumer-offer-delivery/SKILL.md`. Design only,
   not built yet.
 - Internal offer intake currently creates partner-managed digital GS1 8112
-  offers with fixed expiration. Client-managed intake, paper coupons, and
-  rolling-expiration controls are deferred; model choices alone do not
+  offers with fixed expiration. Both intake forms omit coupon-format selection;
+  the shared service fixes the format to digital, including for crafted POSTs.
+  The detail page still displays the stored format. Client-managed intake,
+  paper coupons, and rolling-expiration controls are deferred; model choices alone do not
   mean those workflows are exposed in the form.
 - Full CPG-facing dashboard/panel UI, DRF API endpoints, polished invite
   email flow, and self-service tenant offer submission — deferred past the

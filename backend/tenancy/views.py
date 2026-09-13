@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 
 from offers.models import Offer
+from internal.forms import OfferEditForm
 
 from .middleware import set_active_tenant
 from .models import Tenant, TenantMembership
@@ -48,6 +49,89 @@ def dashboard(request):
         request,
         "tenancy/dashboard.html",
         {"tenant": tenant, "offers": offers, "memberships": memberships},
+    )
+
+
+def _selected_membership(request):
+    if request.tenant is None:
+        return None
+    return get_object_or_404(
+        _active_memberships(request.user),
+        tenant_id=request.tenant.id,
+    )
+
+
+def _membership_can_edit_offers(membership):
+    return membership.role in {
+        TenantMembership.Role.ADMIN,
+        TenantMembership.Role.EDITOR,
+    }
+
+
+@login_required
+def offer_detail(request, offer_id):
+    membership = _selected_membership(request)
+    if membership is None:
+        return redirect("tenancy:tenant_select")
+
+    offer = get_object_or_404(
+        Offer.objects.select_related("tenant", "tcb_manufacturer_link"),
+        id=offer_id,
+        tenant=membership.tenant,
+    )
+    can_edit = (
+        _membership_can_edit_offers(membership)
+        and offer.ownership_mode == Offer.OwnershipMode.PARTNER_MANAGED
+    )
+    return render(
+        request,
+        "offers/detail.html",
+        {
+            "offer": offer,
+            "back_url": "tenancy:dashboard",
+            "edit_url": "tenancy:offer_edit",
+            "can_edit": can_edit,
+            "show_internal_data": False,
+            "sync_logs": offer.tcb_sync_logs.order_by("-created_at")[:10],
+            "clip_count": offer.clips.count(),
+            "redemption_count": offer.clips.filter(state="redeemed").count(),
+        },
+    )
+
+
+@login_required
+def offer_edit(request, offer_id):
+    membership = _selected_membership(request)
+    if membership is None:
+        return redirect("tenancy:tenant_select")
+
+    offer = get_object_or_404(
+        Offer.objects.select_related("tenant"),
+        id=offer_id,
+        tenant=membership.tenant,
+    )
+    if not _membership_can_edit_offers(membership):
+        raise PermissionDenied
+    if offer.ownership_mode != Offer.OwnershipMode.PARTNER_MANAGED:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = OfferEditForm(request.POST, instance=offer)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Updated offer {offer.title}.")
+            return redirect("tenancy:offer_detail", offer_id=offer.id)
+    else:
+        form = OfferEditForm(instance=offer)
+
+    return render(
+        request,
+        "offers/edit.html",
+        {
+            "offer": offer,
+            "form": form,
+            "detail_url": "tenancy:offer_detail",
+        },
     )
 
 # Create your views here.

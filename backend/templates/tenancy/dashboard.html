@@ -29,7 +29,9 @@
         {% for offer in offers %}
           <tr>
             <td class="px-4 py-3">
-              <div class="font-medium">{{ offer.title }}</div>
+              <div class="font-medium">
+                <a href="{% url 'tenancy:offer_detail' offer.id %}" class="text-slate-800 underline decoration-slate-300 underline-offset-2 hover:text-slate-950 hover:decoration-slate-700">{{ offer.title }}</a>
+              </div>
               <div class="text-xs text-slate-500">{{ offer.offer_code }}</div>
             </td>
             <td class="px-4 py-3">{{ offer.get_status_display }}</td>
