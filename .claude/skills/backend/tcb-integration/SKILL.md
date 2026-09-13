@@ -104,6 +104,16 @@ PNG via `BARCODE_MEMORY_FILE` + `Symbol.memfile`). **No human-readable text**
   to **5433** specifically to avoid this; don't "fix" it back to 5432
   without checking `netstat`/`Get-NetTCPConnection` first.
 
+## Known problems & solutions (continued)
+
+- **`CouponFetchCode.fetch_code` has no uniqueness constraint at all
+  today.** Fine as long as no channel actually needs PIN-based redemption
+  (the barcode path doesn't touch this model), but the moment a
+  `DistributionChannel` that relies on `create_fetch_code` goes live, this
+  is a real correctness gap, not a hypothetical one — add a uniqueness
+  constraint (scoped how `CouponClip.serialized_gs1`'s is, or globally)
+  before wiring any fetch-code-based channel into a view.
+
 ## TODO
 
 - `RealTcbClient` needs a real smoke test against a live TCB account — not
@@ -218,6 +228,27 @@ AI(8112) string (cross-check with `gs1.data_string.parse_data_string`) and
 that the serial matches what `MockTcbClient` actually deposited. This is a
 physical/visual check, not a new automated test — the encoder/decoder logic
 already has unit test coverage.
+
+**Self-check before calling this milestone done** (merged in from the
+now-retired `backend/docs/HANDOFF_offer_clip_flow.md`):
+- [ ] `Offer` has an opaque public token/identifier, generated
+      non-sequentially, used in the public URL instead of exposing an
+      internal PK directly.
+- [ ] New routes do **not** live under `/o/` (collides with
+      `oauth2_provider` — see `DECISIONS_AND_ISSUES.md`).
+- [ ] The landing-page GET issues zero TCB calls.
+- [ ] The clip POST calls `tcb_integration.services.issue_and_deposit_clip`
+      — never a raw TCB client import, never wrapped in
+      `transaction.atomic`.
+- [ ] A test proves the same offer can't produce two `CouponClip`s with the
+      same serial/pincode (see `DECISIONS_AND_ISSUES.md`'s entry on why
+      `CouponClip.serialized_gs1`'s global uniqueness constraint already
+      guarantees this — write the test to confirm it, don't just trust the
+      reasoning).
+- [ ] `ClipEvent` rows get created for `link_opened` and `clip_confirmed`
+      at minimum; ideally `barcode_viewed` and `wallet_saved` too.
+- [ ] You've physically scanned a rendered barcode with a phone and
+      confirmed it decodes correctly.
 
 **Explicitly out of scope for this milestone** (deferred per the
 `cpg-engagement-workflow` discussion, not forgotten): bot/abuse detection,

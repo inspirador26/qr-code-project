@@ -8,10 +8,11 @@ description: Design for serving individual offers to consumers at scale (hundred
 **Status: design only, nothing in this doc is built yet.** This is the
 detailed design behind the "consumer-facing clip landing page" item in
 `.claude/skills/backend/DOSSIER.md` §7, written up for discussion before
-implementation starts. It supersedes/extends
-`backend/docs/HANDOFF_offer_clip_flow.md` on two points: the public token
-design (one field, not the two-token idea floated there) and adds the
-masked-domain requirement, which no prior doc covered.
+implementation starts. It supersedes the two-token idea from the now-
+retired `backend/docs/HANDOFF_offer_clip_flow.md` (folded into
+`tcb-integration/SKILL.md`'s milestone checklist) with a single public
+token field, and adds the masked-domain requirement, which no prior doc
+covered.
 
 ## Context
 
@@ -35,7 +36,7 @@ Two requirements drove this design:
 
 Given no real tenants or TCB credentials exist yet, this is **phased**:
 **Phase A** is scoped to land as part of the current MVP milestone
-(alongside the rest of `HANDOFF_offer_clip_flow.md`'s scan→clip→barcode
+(alongside the rest of `tcb-integration/SKILL.md`'s scan→clip→barcode
 loop). **Phase B** (per-tenant custom domains) is fully spec'd here but
 deliberately not built until an actual client asks for white-labeling.
 
@@ -62,8 +63,9 @@ def generate_public_token() -> str:
 Used as the field's callable `default`; retry-on-`IntegrityError` in
 `save()` is a nice-to-have, not required at hundreds-of-offers scale (the
 unique constraint is the real backstop). This is a compact, QR-friendly
-replacement for the raw-UUID/`token_urlsafe(16)` idea floated in
-`HANDOFF_offer_clip_flow.md` — **one** token field, not two. New migration
+replacement for the raw-UUID/`token_urlsafe(16)` idea floated in the
+now-retired `backend/docs/HANDOFF_offer_clip_flow.md` — **one** token
+field, not two. New migration
 `offers/migrations/0002_offer_public_token.py`; no backfill needed (no
 real `Offer` rows exist anywhere yet).
 
@@ -159,7 +161,7 @@ New `backend/offers/views.py` content:
   returns `image/png`, logs `ClipEvent(BARCODE_VIEWED)`.
 - One addition to `backend/wallet/views.py::google_wallet_save`: log
   `ClipEvent(WALLET_SAVED)` — already flagged as a should-do in
-  `HANDOFF_offer_clip_flow.md`.
+  `tcb-integration/SKILL.md`'s milestone checklist.
 
 **Domain routing** — new `backend/offers/middleware.py`, first entry in
 `MIDDLEWARE` (must run before URL resolution):
@@ -241,7 +243,7 @@ section — not re-specified here.
 - Bot/abuse detection and per-offer friction tiers in front of the clip
   endpoint.
 - Multi-channel selection logic on the clip view (default/first channel
-  is fine for now, per `HANDOFF_offer_clip_flow.md`).
+  is fine for now, per `tcb-integration/SKILL.md`'s milestone section).
 - `CouponFetchCode` uniqueness gap, `register_and_lock_offer`'s own
   missing status guard — separate known issues.
 - Tenant self-service domain-verification UI (Phase B ships with an admin

@@ -16,6 +16,50 @@ This took three corrected passes to get right (2026-08-22 through
 Read this before explaining the business model to anyone new, rather than
 re-deriving it from memory.
 
+## Start here: the plain-English mental model
+
+For a developer new to digital coupons, before the precise glossary below:
+a manufacturer coupon is a promise — "if a shopper presents this at
+checkout, take money off, and *someone*, not the retailer, reimburses the
+retailer for that discount." The lifecycle:
+
+1. A brand decides on a promotion. Either we register it with TCB on their
+   behalf, or the brand's own Authorized Partner already did, and just
+   hands us the offer ID. Either way, TCB "locks" the offer once
+   registered — like activating a gift card before anyone can use it.
+2. We give the brand something to distribute — usually a QR code.
+3. A shopper scans it. We generate a unique code just for them and
+   **deposit** it with TCB — this is the "clip," the thing TCB charges
+   $0.01 for.
+4. We hand that shopper a barcode (or a short PIN).
+5. The shopper goes to a store; the retailer's scanner checks the code
+   directly against TCB. TCB says real/not-real — that's TCB's entire
+   involvement in redemption.
+6. Getting the retailer paid never touches TCB or us — see "Two chains"
+   below.
+7. Later, we ask TCB which of our codes were validated at checkout — that
+   feeds the brand's performance dashboard.
+
+**Why this matters for the code, concretely** — "never write redeemed from
+a page a shopper can reach": `CouponClip` has a `state` field and a
+`redeemed_at` timestamp. Setting them is one specific piece of code:
+
+```python
+clip.state = CouponClip.State.REDEEMED
+clip.redeemed_at = redeemed_at
+```
+
+That line only ever runs inside the background job that pulled data from
+TCB's audit feed — never inside a view responding to an HTTP request. If a
+shopper's browser could trigger it directly (the old Node POC actually had
+`POST /redeem/:codeId`, reachable by anyone), a shopper could mark their
+own coupon "redeemed" without ever using it. `redeemed_at` says "TCB
+confirmed this code was used at a retailer" — nothing about whether the
+retailer got paid, since we don't track that at all (see "Two chains"
+below). Because the clip step can be triggered by anyone with the link,
+the system has to assume people might try to spam it — that's the
+abuse-prevention work referenced in `product/cpg-engagement-workflow`.
+
 ## The players
 
 - **CPG** — the brand running the promotion (TCB's own term: "manufacturer").

@@ -114,7 +114,8 @@ not something being incrementally migrated.
   exist (`gs1`, `tcb_integration.services`, `CouponClip`) but nothing ties
   them together yet. Left for last because it's the actual MVP demo
   centerpiece and needed the foundation pieces done first — see
-  `backend/docs/HANDOFF_offer_clip_flow.md`.
+  `.claude/skills/backend/tcb-integration/SKILL.md`'s "Current milestone"
+  section and `.claude/skills/backend/consumer-offer-delivery/SKILL.md`.
 - Celery-driven async outbox worker — `issue_and_deposit_clip` deposits
   synchronously today; fine for exercising the framework, not the final
   design.

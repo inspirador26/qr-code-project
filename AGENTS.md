@@ -45,8 +45,6 @@ explicitly asked for it again in that moment.
 
 ## 3. Where the standing docs are
 
-- `LLM_HANDOFF.md` — architecture/context brief (superseded-notice at the
-  top points from the old Node POC to the current Django backend).
 - `CHANGELOG.md` — session-by-session history, folded from `changelog.d/`
   fragments on merge. Grep it; don't read it top to bottom.
 - `.claude/skills/` — living per-feature docs (architecture, known
