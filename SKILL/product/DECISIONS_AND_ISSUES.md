@@ -3,7 +3,7 @@
 Business/workflow policy decisions and open questions that apply broadly
 to the product, beyond what's already tracked inside
 `product/cpg-engagement-workflow/SKILL.md`'s own TODO/decisions sections.
-See `.claude/skills/skills-organization/SKILL.md` for what belongs here.
+See `SKILL/skills-organization/SKILL.md` for what belongs here.
 Newest on top.
 
 ---

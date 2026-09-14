@@ -2,7 +2,7 @@
 
 Industry/vocabulary corrections and clarifications that apply broadly,
 beyond what's already tracked in `domain/coupon-industry-roles/SKILL.md`
-itself. See `.claude/skills/skills-organization/SKILL.md` for what belongs
+itself. See `SKILL/skills-organization/SKILL.md` for what belongs
 here. Newest on top.
 
 ---

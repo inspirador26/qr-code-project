@@ -23,11 +23,18 @@ and closing the one real gap (per-branch changelog fragments).
 | Concept | Generic name | What it is here |
 |---|---|---|
 | Tier 1 — always-on rules | `RULES.md` | `AGENTS.md` (repo root, cross-tool standard — Codex and others auto-load this name). `CLAUDE.md` is a one-line pointer to it, since Claude Code specifically looks for that filename. |
-| Tier 2 — deep reference per feature | `DOCS/<app>/<app>-notes.md` | `.claude/skills/<segment>/<skill>/SKILL.md` |
-| Tier 2 — why a decision was made | `DOCS/<app>/decisions.md` | `.claude/skills/<segment>/DECISIONS_AND_ISSUES.md` (per segment, not per app — see `skills-organization/SKILL.md`) |
-| Tier 2 — app state dossier | `DOCS/apps/<app>.md` | `.claude/skills/<segment>/DOSSIER.md` — **new**, one per app/segment that has running code (currently just `backend/`) |
+| Tier 2 — deep reference per feature | `DOCS/<app>/<app>-notes.md` | `SKILL/<segment>/<skill>/SKILL.md` |
+| Tier 2 — why a decision was made | `DOCS/<app>/decisions.md` | `SKILL/<segment>/DECISIONS_AND_ISSUES.md` (per segment, not per app — see `skills-organization/SKILL.md`) |
+| Tier 2 — app state dossier | `DOCS/apps/<app>.md` | `SKILL/<segment>/DOSSIER.md` — **new**, one per app/segment that has running code (currently just `backend/`) |
 | Per-branch changelog fragment | `changelog.d/<branch>.md` | `changelog.d/<branch>.md` — **new as of this policy**, same convention |
 | Folded history | `DOCS/changelog.md` | `CHANGELOG.md` (already existed, already grepped not read) |
+
+`SKILL/` (as of 2026-09-13, moved out from under `.claude/skills/`) is a
+plain top-level directory, not Claude Code's auto-loaded Skills mechanism
+— that's a distinct, narrower thing that only scans
+`.claude/skills/<name>/SKILL.md` one level deep and doesn't apply here.
+The `SKILL.md` filename is a naming convention for this project's own
+per-feature deep-reference docs, nothing more.
 
 ## The numbering discipline (for `AGENTS.md`)
 
@@ -42,7 +49,7 @@ the addition in its own commit so a collision is a one-line resolve.
 
 ## The dossier — ten sections, same order every time
 
-For each `.claude/skills/<segment>/DOSSIER.md`:
+For each `SKILL/<segment>/DOSSIER.md`:
 
 1. **Scope** — what it is; what is explicitly OUT and who/what owns it instead
 2. **Policy** — the rules that bite; anything a newcomer would violate by default

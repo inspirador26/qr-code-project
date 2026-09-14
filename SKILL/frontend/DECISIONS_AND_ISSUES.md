@@ -1,9 +1,9 @@
 # Frontend — segment-level decisions & known issues
 
 This file tracks decisions/issues from frontend work onward, per
-`.claude/skills/skills-organization/SKILL.md`. Newest on top.
+`SKILL/skills-organization/SKILL.md`. Newest on top.
 
-See `.claude/skills/product/cpg-engagement-workflow/SKILL.md`'s "UI plan,
+See `SKILL/product/cpg-engagement-workflow/SKILL.md`'s "UI plan,
 by actor" section for the planned shape of the CPG client panel and
 internal ops UI — that's the closest thing to frontend planning that
 exists today, and is where this segment's first skill doc will likely draw

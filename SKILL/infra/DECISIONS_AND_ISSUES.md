@@ -2,7 +2,7 @@
 
 Local dev / ops / credentials decisions and known issues that apply beyond
 what's already tracked in `infra/dev-environment/SKILL.md` itself. See
-`.claude/skills/skills-organization/SKILL.md` for what belongs here. Newest
+`SKILL/skills-organization/SKILL.md` for what belongs here. Newest
 on top.
 
 ---

@@ -4,8 +4,8 @@ This file is loaded at the start of every session, for every person and
 every AI assistant working in this repo (Claude Code, Codex, or otherwise —
 see `CLAUDE.md` for the one-line pointer that tells Claude Code specifically
 to read this file). It holds only the rules that must never be missed.
-Everything else lives in `.claude/skills/` and is loaded by the relevant
-skill — see `DOCUMENTATION_POLICY.md` for the full system this belongs to.
+Everything else lives in `SKILL/` — see `DOCUMENTATION_POLICY.md` for the
+full system this belongs to.
 
 **To find out where things stand, ask the repo — not a file someone
 maintained by hand.** There is no standing "resume point" document.
@@ -14,9 +14,9 @@ maintained by hand.** There is no standing "resume point" document.
 |---|---|
 | What is in flight? | `ls changelog.d/` — a file per branch. An empty folder (aside from its README) is healthy |
 | What is waiting on review? | `gh pr list` |
-| What do I need to know about the backend? | `.claude/skills/backend/DOSSIER.md` |
+| What do I need to know about the backend? | `SKILL/backend/DOSSIER.md` |
 | What happened, and why? | `CHANGELOG.md` — grep it, never read it start to end |
-| Why was a specific decision made? | `.claude/skills/<segment>/DECISIONS_AND_ISSUES.md` |
+| Why was a specific decision made? | `SKILL/<segment>/DECISIONS_AND_ISSUES.md` |
 
 ## Numbering discipline
 
@@ -47,19 +47,21 @@ explicitly asked for it again in that moment.
 
 - `CHANGELOG.md` — session-by-session history, folded from `changelog.d/`
   fragments on merge. Grep it; don't read it top to bottom.
-- `.claude/skills/` — living per-feature docs (architecture, known
+- `SKILL/` — living per-feature docs (architecture, known
   problems/solutions, TODOs), grouped into segment folders (`backend/`,
   `frontend/`, `legacy/`, `product/`, `domain/`, `infra/`). See
-  `.claude/skills/skills-organization/SKILL.md` for the grouping policy,
+  `SKILL/skills-organization/SKILL.md` for the grouping policy,
   and `DOCUMENTATION_POLICY.md` for the full documentation system
-  (dossiers, decisions logs, changelog fragments). These are Claude Code
-  "skills" mechanically (auto-loadable by name), but the files themselves
-  are plain markdown — readable and editable by any tool.
+  (dossiers, decisions logs, changelog fragments). Despite the `SKILL.md`
+  filename convention, these are plain reference markdown — **not** Claude
+  Code's auto-loaded Skills mechanism (that only scans
+  `.claude/skills/<name>/SKILL.md`, unrelated to this top-level directory);
+  a session has to be pointed at one or read it directly.
 
 ## 4. Documentation rides with the work
 
 A feature isn't done when it merges undocumented "for a later branch" —
 that later branch is the one that never gets written. Update the relevant
-dossier (`.claude/skills/<segment>/DOSSIER.md` §5–§8), decisions log, and
+dossier (`SKILL/<segment>/DOSSIER.md` §5–§8), decisions log, and
 `changelog.d/<branch>.md` fragment in the same branch as the work, not
 after. Full detail in `DOCUMENTATION_POLICY.md`.

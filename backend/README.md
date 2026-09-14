@@ -9,8 +9,8 @@ This supersedes the Node/Express proof-of-concept at the repo root
 (`server.js`), which is kept only as a behavioral reference during the
 rewrite (QR generation logic, the Google Wallet JWT construction) — not
 something being incrementally migrated. See
-`.claude/skills/legacy/qr-coupon-flow/SKILL.md` for that reference, and
-`.claude/skills/backend/DOSSIER.md` for this backend's current state (the
+`SKILL/legacy/qr-coupon-flow/SKILL.md` for that reference, and
+`SKILL/backend/DOSSIER.md` for this backend's current state (the
 front door — read that first, not this file, for "what's built"). Why the
 rewrite happened at all (and why Django specifically) is recorded in
 `../CHANGELOG.md`'s `2026-08-22 ... part 3` entry — grep it rather than
@@ -34,7 +34,7 @@ python manage.py runserver
 
 Then:
 - `http://127.0.0.1:8000/` — health check (no consumer-facing pages exist
-  yet — see `.claude/skills/backend/DOSSIER.md` §5–§7 for what's built)
+  yet — see `SKILL/backend/DOSSIER.md` §5–§7 for what's built)
 - `http://127.0.0.1:8000/admin/` — full Django admin, all models registered,
   each with a short description of what it's for right on the index page
   (see `config/admin.py` if you need to add/update one — it's a lookup dict,
@@ -57,7 +57,7 @@ available (OAuth credentials, TCB credentials, Google Wallet service
 account path) — everything has a safe default for local dev in the
 meantime, and `TCB_USE_MOCK=True` means the whole TCB integration works
 without any real TCB credentials at all (see
-`.claude/skills/backend/tcb-integration/SKILL.md`).
+`SKILL/backend/tcb-integration/SKILL.md`).
 
 ## Running tests
 
@@ -86,7 +86,7 @@ process. It prints the seeded offer UUID and planned `/offer/<uuid>/` URL.
 
 ## Architecture, tenant isolation, the TCB integration seam, current status
 
-These live in `.claude/skills/backend/`, not here, so there's exactly one
+These live in `SKILL/backend/`, not here, so there's exactly one
 place to keep them current:
 - **`DOSSIER.md`** — the apps table, tenant-isolation policy, and the
   authoritative "what's built / what's not" (§3, §2, §5–§7).

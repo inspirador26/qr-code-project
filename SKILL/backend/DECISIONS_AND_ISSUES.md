@@ -3,7 +3,7 @@
 Policy decisions and known issues that apply across more than one backend
 skill doc (`backend/tcb-integration`, `backend/tenancy-and-auth`,
 `backend/google-wallet`, `backend/consumer-offer-delivery`), rather than to
-just one. See `.claude/skills/skills-organization/SKILL.md` for what
+just one. See `SKILL/skills-organization/SKILL.md` for what
 belongs here vs. on an individual skill doc. Newest on top.
 
 ---
@@ -30,7 +30,7 @@ and isn't built for routing across many independently-verified hostnames.
 (not just offers) that needs to avoid our branding must follow the same
 rule — serve it end-to-end from the masked domain, don't redirect into it.
 
-**How to apply**: see `.claude/skills/backend/consumer-offer-delivery/
+**How to apply**: see `SKILL/backend/consumer-offer-delivery/
 SKILL.md` §A3 for the full middleware/urlconf design before adding any new
 consumer-facing route.
 
