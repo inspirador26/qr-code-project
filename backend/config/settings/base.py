@@ -145,6 +145,14 @@ LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "post_login_redirect"  # role-based router, see accounts/views.py
 ACCOUNT_LOGOUT_REDIRECT_URL = "account_login"  # send you back to the login page, not "/"
 
+# Django's default is a silent 2-week session — see tenancy-and-auth skill
+# doc's "Known problems & solutions" for why that's not what we want for
+# either /internal/ or /app/. Sliding 8-hour idle timeout, and also cleared
+# on browser close.
+SESSION_COOKIE_AGE = 60 * 60 * 8
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 # --- TCB integration (platform-level credentials, not per-tenant) ----------
 # See backend/tcb_integration/ — one credential pair per TCB role.
 
