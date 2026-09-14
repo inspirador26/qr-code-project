@@ -3,7 +3,7 @@
 Policy decisions and known issues that apply to the legacy Node/Express
 proof-of-concept (`server.js` at the repo root) beyond what's already in
 `legacy/qr-coupon-flow/SKILL.md`. See
-`.claude/skills/skills-organization/SKILL.md` for what belongs here. Newest
+`SKILL/skills-organization/SKILL.md` for what belongs here. Newest
 on top.
 
 ---

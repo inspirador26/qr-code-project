@@ -10,8 +10,8 @@ confirmed gap where `issue_and_deposit_clip` deposits to TCB with no check
 that the offer is still active. That produced a design doc. Separately,
 reviewing an external draft documentation-policy text against our own
 `AGENTS.md`/`DOCUMENTATION_POLICY.md` surfaced that several root-level
-`.md` files predate the `.claude/skills/` system and were never folded in
-— this branch also does that cleanup.
+`.md` files predate the skills system and were never folded in — this
+branch also does that cleanup.
 
 ### Files touched
 
@@ -50,19 +50,23 @@ reviewing an external draft documentation-policy text against our own
 - `.claude/skills/legacy/DECISIONS_AND_ISSUES.md`,
   `.claude/skills/product/DECISIONS_AND_ISSUES.md` — fixed dangling
   pointers to the retired root docs.
-- Deleted (pure duplicates of what the skills system already covers in
-  more current detail — `qr-coupon-flow/SKILL.md` for the Node POC,
-  `DOSSIER.md`/`tcb-integration/SKILL.md` for Django state): `ARCHITECTURE.md`,
+- **Still pending, not yet done as of this entry** (correction to what an
+  earlier version of this fragment claimed): `ARCHITECTURE.md`,
   `DATABASE.md`, `PROJECT_OVERVIEW.md`, `ROADMAP.md`, `LLM_HANDOFF.md`,
-  `HANDOFF_MVP_DEMO.md`, `COUPON_WORKFLOW_PRIMER.md` (post-merge),
-  `backend/docs/HANDOFF_offer_clip_flow.md` (post-merge).
+  `HANDOFF_MVP_DEMO.md`, `COUPON_WORKFLOW_PRIMER.md`,
+  `backend/docs/HANDOFF_offer_clip_flow.md` are pure duplicates of what the
+  skills system already covers in more current detail and should be
+  deleted (their content is already merged elsewhere) — the delete
+  commands were handed to Justin to run but hadn't landed on disk yet at
+  merge time. See the `docs/skill-dir-top-level` branch's fragment for
+  whether that's since been resolved.
 
 ### Verified
 
 Docs-only branch, no code changes, no test run. Grepped the whole repo
-(excluding `venv/`) for references to every deleted filename after each
-merge — confirmed no remaining dangling pointers outside `CHANGELOG.md`
-(left alone deliberately: those are historical fact, not live references).
+(excluding `venv/`) for references to every to-be-deleted filename after
+each merge — confirmed no dangling pointers outside `CHANGELOG.md` (left
+alone deliberately: those are historical fact, not live references).
 
 ### Not done / known gaps
 
@@ -76,3 +80,8 @@ merge — confirmed no remaining dangling pointers outside `CHANGELOG.md`
   changed** — adoption is still an open decision, not resolved here.
 - No docs drift-detection script (citation checking, duplicate rule
   numbers) exists yet — raised during the policy review, not built.
+- The root `.md` files listed above as "still pending" were never
+  actually deleted before this branch merged — worth folding this
+  fragment into `CHANGELOG.md` (and deleting it) once that's confirmed
+  done, along with `changelog.d/feature-new-offer.md`, which is also
+  sitting unfolded from an earlier merge.

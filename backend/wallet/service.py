@@ -105,7 +105,7 @@ def build_save_jwt(clip: CouponClip) -> str:
         "payload": {
             # Omit reviewStatus: classes already exist server-side as
             # 'approved' once created, and a save JWT can't downgrade an
-            # approved class — see .claude/skills/backend/google-wallet/SKILL.md
+            # approved class — see SKILL/backend/google-wallet/SKILL.md
             # for the original bug this caused in the Node POC.
             "offerClasses": [
                 {

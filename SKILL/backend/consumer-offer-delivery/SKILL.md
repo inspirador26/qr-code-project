@@ -7,7 +7,7 @@ description: Design for serving individual offers to consumers at scale (hundred
 
 **Status: design only, nothing in this doc is built yet.** This is the
 detailed design behind the "consumer-facing clip landing page" item in
-`.claude/skills/backend/DOSSIER.md` §7, written up for discussion before
+`SKILL/backend/DOSSIER.md` §7, written up for discussion before
 implementation starts. It supersedes the two-token idea from the now-
 retired `backend/docs/HANDOFF_offer_clip_flow.md` (folded into
 `tcb-integration/SKILL.md`'s milestone checklist) with a single public

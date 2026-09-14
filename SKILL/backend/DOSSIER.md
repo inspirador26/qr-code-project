@@ -13,7 +13,7 @@ GS1 AI(8112) digital coupon barcodes on behalf of CPG manufacturer clients,
 via The Coupon Bureau (TCB), and reports offer performance back to them.
 
 **Explicitly OUT of this dossier's scope:** the legacy Node/Express POC at
-the repo root (`server.js`) — see `.claude/skills/legacy/qr-coupon-flow/
+the repo root (`server.js`) — see `SKILL/legacy/qr-coupon-flow/
 SKILL.md`. It's kept only as a behavioral reference during the rewrite,
 not something being incrementally migrated.
 
@@ -122,8 +122,8 @@ not something being incrementally migrated.
   exist (`gs1`, `tcb_integration.services`, `CouponClip`) but nothing ties
   them together yet. Left for last because it's the actual MVP demo
   centerpiece and needed the foundation pieces done first — see
-  `.claude/skills/backend/tcb-integration/SKILL.md`'s "Current milestone"
-  section and `.claude/skills/backend/consumer-offer-delivery/SKILL.md`.
+  `SKILL/backend/tcb-integration/SKILL.md`'s "Current milestone"
+  section and `SKILL/backend/consumer-offer-delivery/SKILL.md`.
 - Celery-driven async outbox worker — `issue_and_deposit_clip` deposits
   synchronously today; fine for exercising the framework, not the final
   design.
@@ -134,7 +134,7 @@ not something being incrementally migrated.
 - Design for masked/white-label consumer offer links (neutral shared
   domain now, per-tenant custom domain later) and fixing the missing
   "is this offer still active" guard before a TCB deposit — see
-  `.claude/skills/backend/consumer-offer-delivery/SKILL.md`. Design only,
+  `SKILL/backend/consumer-offer-delivery/SKILL.md`. Design only,
   not built yet.
 - Internal offer intake currently creates partner-managed digital GS1 8112
   offers with fixed expiration. Client-managed intake, paper coupons, and
@@ -161,7 +161,7 @@ not something being incrementally migrated.
 ## 10. Working on this backend
 
 1. Read this dossier's §5–§8 first — don't trust memory of "what's built."
-2. `.claude/skills/infra/dev-environment/SKILL.md` for how to actually boot
+2. `SKILL/infra/dev-environment/SKILL.md` for how to actually boot
    it locally (Postgres/Redis ports, env vars, gotchas).
 3. Check `changelog.d/` for any in-flight branch fragments touching this
    segment before assuming the dossier is fully current.
