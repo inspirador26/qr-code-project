@@ -66,6 +66,20 @@ namespace, never through the tenant-membership path.
 
 ## Known problems & solutions
 
+- **Django's default session lifetime is a silent 2 weeks.** Discovered
+  while manually testing `/internal/offers/new/`: a superuser session
+  created earlier in a browser stayed valid across dev-server restarts and
+  days of testing with no re-login prompt, which looked at first like the
+  view had no access control at all (it does — `internal_operator_required`
+  wraps `login_required`; the browser was just already authenticated).
+  Fixed in `config/settings/base.py`: `SESSION_COOKIE_AGE = 60 * 60 * 8`
+  (8-hour idle timeout) + `SESSION_SAVE_EVERY_REQUEST = True` (sliding —
+  active use doesn't get logged out mid-session) +
+  `SESSION_EXPIRE_AT_BROWSER_CLOSE = True`. Applies to both `/internal/`
+  and `/app/` sessions alike (one shared Django session mechanism, not
+  per-namespace). If you're testing auth-gating and a view seems
+  unprotected, check for a stale logged-in session (private/incognito
+  window rules it out) before assuming the code is broken.
 - **`AbstractUser` + `USERNAME_FIELD = "email"` needs a custom manager.**
   Django's default `UserManager.create_superuser` calls `create_user`
   assuming a username-first signature; without `_EmailUserManager`
