@@ -83,6 +83,9 @@ The command creates or updates a demo `Tenant`, `TcbManufacturerLink`,
 `OfferChannelConfig`, then calls `register_and_lock_offer(offer)` so the
 mock TCB client will accept clip deposits for that offer in the current
 process. It prints the seeded offer UUID and planned `/offer/<uuid>/` URL.
+The local offer remains LOCKED after seeding. Set it ACTIVE explicitly
+(for example in Django admin) before clipping; A2 now rejects inactive,
+out-of-campaign, or clip-limit-exhausted offers before any TCB deposit.
 
 ## Architecture, tenant isolation, the TCB integration seam, current status
 
