@@ -68,6 +68,9 @@ not something being incrementally migrated.
 ## 5. Current state
 
 **Live / built and tested:**
+- `Offer.public_token`: automatic 10-character opaque identifiers, unique
+  in the database and excluded from model forms. Migration `offers.0002`
+  also assigns distinct tokens to existing offers; apply with `migrate`.
 - Full data model, migrated cleanly against Postgres.
 - GS1 AI(8112) encoding/parsing + barcode rendering.
 - Google Wallet save flow.
@@ -124,6 +127,8 @@ not something being incrementally migrated.
   centerpiece and needed the foundation pieces done first — see
   `SKILL/backend/tcb-integration/SKILL.md`'s "Current milestone"
   section and `SKILL/backend/consumer-offer-delivery/SKILL.md`.
+  A1 (public tokens) is implemented; A2–A4 (clip eligibility, public flow
+  and domain routing, link builder) remain to be built.
 - Celery-driven async outbox worker — `issue_and_deposit_clip` deposits
   synchronously today; fine for exercising the framework, not the final
   design.
@@ -134,8 +139,8 @@ not something being incrementally migrated.
 - Design for masked/white-label consumer offer links (neutral shared
   domain now, per-tenant custom domain later) and fixing the missing
   "is this offer still active" guard before a TCB deposit — see
-  `SKILL/backend/consumer-offer-delivery/SKILL.md`. Design only,
-  not built yet.
+  `SKILL/backend/consumer-offer-delivery/SKILL.md`. Public tokens (A1)
+  are implemented; the guard, masked domain, and link builder remain planned.
 - Internal offer intake currently creates partner-managed digital GS1 8112
   offers with fixed expiration. Client-managed intake, paper coupons, and
   rolling-expiration controls are deferred; model choices alone do not

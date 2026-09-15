@@ -1,11 +1,11 @@
 ---
 name: consumer-offer-delivery
-description: Design for serving individual offers to consumers at scale (hundreds of offers across hundreds of tenants) — the masked/white-label public link, the short opaque offer token, and the currently-missing "is this offer still active" guard before depositing a clip with TCB. Not yet built. Load this before starting the consumer-facing clip landing page work, or touching offers/urls.py, offers/views.py, or tcb_integration.services.issue_and_deposit_clip's guard logic.
+description: Consumer offer delivery plan — A1 public tokens implemented; masked links and the offer-active guard remain planned. Load this before consumer-facing clip landing page work or changes to offer tokens, public routing, or clip guards.
 ---
 
 # Consumer offer delivery: masked links, active-check gap, scale
 
-**Status: design only, nothing in this doc is built yet.** This is the
+**Status: A1 public tokens implemented; A2–A4 and Phase B remain planned.** This is the
 detailed design behind the "consumer-facing clip landing page" item in
 `SKILL/backend/DOSSIER.md` §7, written up for discussion before
 implementation starts. It supersedes the two-token idea from the now-
@@ -19,7 +19,7 @@ covered.
 The backend can already register an offer with TCB and issue/deposit a
 clip (`tcb_integration.services.issue_and_deposit_clip`), but nothing
 serves that to an actual consumer yet — `offers/urls.py` doesn't exist,
-`offers/views.py` is a stub, and `Offer` has no public identifier.
+`offers/views.py` is a stub. `Offer.public_token` now provides the public identifier.
 
 Two requirements drove this design:
 
@@ -46,14 +46,17 @@ deliberately not built until an actual client asks for white-labeling.
 
 ### A1. Short opaque public token on `Offer`
 
-`backend/offers/models.py` — add:
+Implemented in `backend/offers/models.py`:
 ```python
 public_token = models.CharField(
     max_length=12, unique=True, db_index=True, editable=False,
+    default=generate_public_token,
 )
 ```
-New `backend/offers/tokens.py`:
+`backend/offers/tokens.py`:
 ```python
+import secrets
+
 _ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"  # no 0/O/1/I/L
 _LENGTH = 10
 
@@ -66,8 +69,19 @@ unique constraint is the real backstop). This is a compact, QR-friendly
 replacement for the raw-UUID/`token_urlsafe(16)` idea floated in the
 now-retired `backend/docs/HANDOFF_offer_clip_flow.md` — **one** token
 field, not two. New migration
-`offers/migrations/0002_offer_public_token.py`; no backfill needed (no
-real `Offer` rows exist anywhere yet).
+`offers/migrations/0002_offer_public_token.py` adds a nullable field,
+generates a distinct token for each existing offer, then enforces non-null
+and uniqueness. This supports demo/local offers as well as empty databases;
+adding a unique field with a callable default in one step would reuse one
+value for existing rows. Apply with `python manage.py migrate`.
+
+The alphabet has 30 characters (30^10 = 590,490,000,000,000 combinations).
+Tokens persist across normal updates and are excluded from model forms.
+The database rejects a collision; automatic retries on new offer creation
+remain deferred. Public URLs and QR generation still belong to A3–A4.
+
+`offers.tests` covers token format, separate defaults, persistence, database
+uniqueness, model-form exclusion, and migration of multiple existing offers.
 
 ### A2. Fix the active-check gap
 

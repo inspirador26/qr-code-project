@@ -8,6 +8,28 @@ belongs here vs. on an individual skill doc. Newest on top.
 
 ---
 
+## 2026-09-15 — Public offer tokens backfill existing rows before enforcing uniqueness
+
+**Requested as**: "implement 'Phase A: Add a public offer token'" on
+`feature/add-public-offer-token`.
+
+**Decision/finding**: A1 uses a callable `secrets.choice` generator for
+10-character tokens, with a database uniqueness constraint and no automatic
+creation retry. The migration adds a nullable column, fills each existing
+offer separately, then enforces the final field definition. The original
+plan assumed an empty database, but demo/local data must also be supported.
+
+**Why it matters beyond one feature**: adding a unique column with a callable
+default in one migration operation evaluates the default once for existing
+rows, which can cause duplicate values and a failed migration.
+
+**How to apply**: use a staged migration for generated unique identifiers.
+Keep public offer tokens separate from TCB coupon serials; public tokens
+identify the offer and remain stable when its other fields change. A2–A4
+remain separate work. Token generation is not an authorization boundary.
+
+---
+
 ## 2026-09-13 — Consumer offer links serve the whole flow from the masked domain; no redirect hop
 
 **Requested as**: "ideally this is a masked tiny url style url that allow[s]
