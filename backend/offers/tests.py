@@ -55,6 +55,9 @@ class SeedDemoOfferCommandTests(TestCase):
             ).exists()
         )
 
+        # Registration locks the MOF; local activation is a separate step.
+        offer.status = Offer.Status.ACTIVE
+        offer.save(update_fields=["status", "updated_at"])
         clip = issue_and_deposit_clip(offer, channel)
         self.assertEqual(clip.state, CouponClip.State.DEPOSITED)
         self.assertTrue(clip.serialized_gs1.startswith(offer.base_gs1))
