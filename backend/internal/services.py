@@ -60,16 +60,24 @@ def create_account_with_offer(*, data: dict, invited_by=None) -> AccountIntakeRe
     )
 
 
-def create_offer_for_tenant(*, tenant: Tenant, data: dict) -> OfferIntakeResult:
-    tcb_link, _ = TcbManufacturerLink.objects.update_or_create(
-        tenant=tenant,
-        manufacturer_email_domain=data["manufacturer_email_domain"],
-        defaults={
-            "brand_id": data.get("brand_id", ""),
-            "connection_status": TcbManufacturerLink.ConnectionStatus.AUTHORIZED,
-            "verified_at": timezone.now(),
-        },
-    )
+def create_offer_for_tenant(*, tenant: Tenant, data: dict, tcb_link=None) -> OfferIntakeResult:
+    if tcb_link is not None:
+        # Re-read through the tenant boundary; never trust client-supplied brand data.
+        try:
+            tcb_link = TcbManufacturerLink.objects.get(pk=tcb_link.pk, tenant=tenant)
+        except TcbManufacturerLink.DoesNotExist as exc:
+            raise ValueError("The manufacturer link does not belong to this account.") from exc
+    else:
+        # Account onboarding may create a new identity; existing-account intake reuses one.
+        tcb_link, _ = TcbManufacturerLink.objects.update_or_create(
+            tenant=tenant,
+            manufacturer_email_domain=data["manufacturer_email_domain"],
+            defaults={
+                "brand_id": data.get("brand_id", ""),
+                "connection_status": TcbManufacturerLink.ConnectionStatus.AUTHORIZED,
+                "verified_at": timezone.now(),
+            },
+        )
     channel, _ = DistributionChannel.objects.update_or_create(
         code="gs1_8112_barcode",
         defaults={"display_name": "GS1 8112 Barcode", "is_active": True},

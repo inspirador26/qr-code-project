@@ -1,5 +1,7 @@
 from django import forms
+from django.db.models.functions import Lower
 
+from offers.models import TcbManufacturerLink
 from tenancy.models import Tenant, TenantMembership
 
 
@@ -73,8 +75,8 @@ class AccountIntakeForm(forms.Form):
 class OfferIntakeForm(forms.Form):
     tenant = forms.ModelChoiceField(label="Account", queryset=Tenant.objects.none())
 
-    manufacturer_email_domain = forms.CharField(label="Manufacturer email domain", max_length=255)
-    brand_id = forms.CharField(label="TCB brand ID", max_length=64, required=False)
+    manufacturer_email_domain = forms.ChoiceField(label="Manufacturer email domain")
+    brand_id = forms.CharField(label="TCB brand ID", required=False, disabled=True)
 
     offer_title = forms.CharField(label="Offer title", max_length=255)
     offer_description = forms.CharField(
@@ -101,9 +103,32 @@ class OfferIntakeForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["tenant"].queryset = Tenant.objects.order_by("name")
+        self.fields["tenant"].queryset = Tenant.objects.order_by(Lower("name"), "pk")
+        if not self.is_bound and not self.initial.get("tenant"):
+            self.initial["tenant"] = self.fields["tenant"].queryset.first()
+        try:
+            tenant = self.fields["tenant"].clean(self["tenant"].value())
+        except forms.ValidationError:
+            tenant = None
+        self.links = list(TcbManufacturerLink.objects.filter(tenant=tenant).order_by(
+            Lower("manufacturer_email_domain"), "pk"
+        ))
+        self.fields["manufacturer_email_domain"].choices = [
+            (link.manufacturer_email_domain, link.manufacturer_email_domain) for link in self.links
+        ]
+        if not self.is_bound and self.links:
+            self.initial["manufacturer_email_domain"] = self.links[0].manufacturer_email_domain
+        selected_domain = self["manufacturer_email_domain"].value()
+        self.selected_link = next((link for link in self.links
+                                   if link.manufacturer_email_domain == selected_domain), None)
+        self.initial["brand_id"] = self.selected_link.brand_id if self.selected_link else ""
+        self.fields["brand_id"].widget.attrs["placeholder"] = "No Brand ID recorded"
         apply_panel_field_classes(self)
 
     def clean(self):
         cleaned = super().clean()
+        if not self.links:
+            self.add_error(None, "This account has no manufacturer links. Add a link in admin before creating an offer.")
+        if "manufacturer_email_domain" in cleaned and self.selected_link:
+            cleaned["tcb_link"] = self.selected_link
         return clean_offer_limits(self)

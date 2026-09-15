@@ -31,6 +31,13 @@ account and initial offer, and `/internal/offers/new/` for an existing
 account. Per-account Add Offer links preselect the tenant. Both intake
 paths share the backend offer registration service.
 
+Existing-account offer intake defaults to the alphabetically first account
+unless an account is supplied by the dashboard. Manufacturer choices come
+from that account's saved links, defaulting alphabetically, and changing
+account or domain refreshes the read-only Brand ID. Accounts without links
+show guidance and cannot submit. The server validates link ownership and
+ignores submitted Brand IDs. Account onboarding still accepts new link data.
+
 Allauth login returns through `post_login_redirect`: internal users land
 on `/internal/`, active tenant members on `/app/`. Keep that role-based
 routing and the shared navigation gates when extending either panel.

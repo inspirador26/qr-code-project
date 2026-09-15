@@ -29,6 +29,8 @@
       {% include "partials/form_field.html" with field=form.manufacturer_email_domain %}
       {% include "partials/form_field.html" with field=form.brand_id %}
     </div>
+    <p id="manufacturer-empty" role="status" class="mt-2 text-sm text-amber-900" {% if form.links %}hidden{% endif %}>This account has no manufacturer links. Add a link in admin before creating an offer.</p>
+    <noscript><p>Enable JavaScript to update manufacturer choices when changing accounts.</p></noscript>
   </section>
 
   <section>
@@ -47,7 +49,33 @@
 
   <div class="flex justify-end gap-3">
     <a href="{% url 'internal:dashboard' %}" class="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Cancel</a>
-    <button type="submit" class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">Create Offer</button>
+    <button id="create-offer" type="submit" {% if not form.links %}disabled{% endif %} class="rounded bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50">Create Offer</button>
   </div>
 </form>
+{{ manufacturer_options|json_script:"manufacturer-options" }}
+<script>
+(() => {
+  const options = JSON.parse(document.getElementById("manufacturer-options").textContent);
+  const account = document.getElementById("id_tenant");
+  const domain = document.getElementById("id_manufacturer_email_domain");
+  const brand = document.getElementById("id_brand_id");
+  const empty = document.getElementById("manufacturer-empty");
+  const submit = document.getElementById("create-offer");
+  function updateBrand() {
+    const links = options[account.value] || [];
+    brand.value = links.find(link => link.domain === domain.value)?.brand_id || "";
+    empty.hidden = links.length > 0;
+    submit.disabled = !domain.value;
+  }
+  account.addEventListener("change", () => {
+    domain.replaceChildren();
+    for (const link of options[account.value] || []) {
+      domain.add(new Option(link.domain, link.domain));
+    }
+    updateBrand();
+  });
+  domain.addEventListener("change", updateBrand);
+  updateBrand();
+})();
+</script>
 {% endblock %}
