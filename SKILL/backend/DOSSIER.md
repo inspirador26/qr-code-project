@@ -67,6 +67,12 @@ not something being incrementally migrated.
 
 ## 5. Current state
 
+Existing-account New Offer intake selects manufacturer domains from the
+chosen tenant's saved TCB links and displays the corresponding Brand ID
+read-only. Defaults are alphabetical (account, then domain); dashboard
+account preselection takes priority. The server validates ownership and
+reuses the link without changing its Brand ID or verification status.
+
 **Live / built and tested:**
 - Full data model, migrated cleanly against Postgres.
 - GS1 AI(8112) encoding/parsing + barcode rendering.
@@ -90,6 +96,12 @@ not something being incrementally migrated.
 - `api.ApiClient` / DRF scaffolding exists but exposes no real endpoints.
 
 ## 6. Known issues
+
+- New Offer requires an existing manufacturer link; accounts without links
+  must have one added through admin. Dynamic account/domain changes require
+  JavaScript. Link options are a page-load snapshot; stale selections are
+  validated against the database on submission. Account onboarding retains
+  its separate free-text link creation flow.
 
 - Offer intake uses the mock TCB lifecycle locally. Registration runs
   outside an atomic transaction so failure logs survive; a failed request

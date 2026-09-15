@@ -8,6 +8,18 @@ belongs here vs. on an individual skill doc. Newest on top.
 
 ---
 
+## 2026-09-13 — Existing-account offer intake reuses manufacturer identities
+
+Requested: account-dependent manufacturer picklists with automatic Brand ID.
+Each TCB link currently has one Brand ID, so show that value read-only rather
+than offering unrelated brands. Alphabetical account/domain defaults avoid
+introducing a last-used preference store. Account onboarding may create a
+link; existing-account intake passes a selected link that the service
+re-reads within the tenant boundary. Creating another offer must not rewrite
+the shared link's Brand ID, connection status, or verification timestamp.
+
+---
+
 ## 2026-09-13 — Consumer offer links serve the whole flow from the masked domain; no redirect hop
 
 **Requested as**: "ideally this is a masked tiny url style url that allow[s]

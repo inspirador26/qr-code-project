@@ -4,7 +4,8 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 
 from accounts.models import InternalOperator
-from offers.models import Offer
+from offers.models import Offer, TcbManufacturerLink
+from django.db.models.functions import Lower
 from tcb_integration.exceptions import TcbApiError
 from tenancy.models import Tenant
 
@@ -75,6 +76,7 @@ def offer_intake(request):
                 result = create_offer_for_tenant(
                     tenant=form.cleaned_data["tenant"],
                     data=form.cleaned_data,
+                    tcb_link=form.cleaned_data["tcb_link"],
                 )
             except (TcbApiError, ValueError) as exc:
                 form.add_error(None, str(exc))
@@ -94,4 +96,11 @@ def offer_intake(request):
                 "max_clips": 1000,
             }
         )
-    return render(request, "internal/offer_intake.html", {"form": form})
+    manufacturer_options = {}
+    for link in TcbManufacturerLink.objects.order_by(Lower("manufacturer_email_domain"), "pk"):
+        manufacturer_options.setdefault(str(link.tenant_id), []).append({
+            "domain": link.manufacturer_email_domain, "brand_id": link.brand_id,
+        })
+    return render(request, "internal/offer_intake.html", {
+        "form": form, "manufacturer_options": manufacturer_options,
+    })

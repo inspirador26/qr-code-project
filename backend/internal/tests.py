@@ -15,6 +15,69 @@ from tenancy.models import Tenant, TenantMembership
 User = get_user_model()
 
 
+class OfferAutofillTests(TestCase):
+    def setUp(self):
+        from .forms import OfferIntakeForm
+        self.form_class = OfferIntakeForm
+        self.zulu = Tenant.objects.create(name="Zulu")
+        self.alpha = Tenant.objects.create(name="alpha")
+        self.link = TcbManufacturerLink.objects.create(
+            tenant=self.alpha, manufacturer_email_domain="a.example", brand_id="brand-a",
+        )
+        TcbManufacturerLink.objects.create(
+            tenant=self.alpha, manufacturer_email_domain="z.example", brand_id="brand-z",
+        )
+        self.other = TcbManufacturerLink.objects.create(
+            tenant=self.zulu, manufacturer_email_domain="other.example", brand_id="",
+        )
+        self.data = {
+            "tenant": str(self.alpha.pk), "manufacturer_email_domain": "a.example",
+            "offer_title": "Test", "coupon_funder_id": "123456", "offer_code": "000001",
+            "total_circulation": 100, "max_clips": 50, "campaign_days": 30,
+            "redemption_days": 60, "brand_id": "forged",
+        }
+
+    def test_alphabetical_defaults_and_explicit_account(self):
+        form = self.form_class()
+        self.assertEqual(str(form["tenant"].value()), str(self.alpha.pk))
+        self.assertEqual(form["manufacturer_email_domain"].value(), "a.example")
+        self.assertEqual(form["brand_id"].value(), "brand-a")
+        form = self.form_class(initial={"tenant": str(self.zulu.pk)})
+        self.assertEqual(form.fields["manufacturer_email_domain"].choices, [("other.example", "other.example")])
+        self.assertEqual(form["brand_id"].value(), "")
+
+    def test_post_uses_selected_link_and_preserves_selection_on_error(self):
+        form = self.form_class({**self.data, "manufacturer_email_domain": "z.example"})
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["tcb_link"].brand_id, "brand-z")
+        self.assertEqual(form.cleaned_data["brand_id"], "brand-z")
+        form = self.form_class({**self.data, "manufacturer_email_domain": "z.example", "offer_title": ""})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form["manufacturer_email_domain"].value(), "z.example")
+        self.assertEqual(form["brand_id"].value(), "brand-z")
+
+    def test_foreign_or_deleted_domain_rejected(self):
+        for domain in ("other.example", "deleted.example"):
+            form = self.form_class({**self.data, "manufacturer_email_domain": domain})
+            self.assertFalse(form.is_valid())
+            self.assertIn("manufacturer_email_domain", form.errors)
+
+    def test_empty_and_invalid_accounts(self):
+        empty = Tenant.objects.create(name="Empty")
+        for tenant_id in (str(empty.pk), "invalid", ""):
+            form = self.form_class({**self.data, "tenant": tenant_id})
+            self.assertFalse(form.is_valid())
+            self.assertEqual(form.links, [])
+        Tenant.objects.all().delete()
+        self.assertEqual(self.form_class().links, [])
+
+    def test_service_rejects_foreign_link_before_writing(self):
+        from .services import create_offer_for_tenant
+        with self.assertRaisesMessage(ValueError, "does not belong"):
+            create_offer_for_tenant(tenant=self.alpha, data=self.data, tcb_link=self.other)
+        self.assertFalse(Offer.objects.exists())
+
+
 @override_settings(TCB_USE_MOCK=True, TCB_PLATFORM_EMAIL_DOMAIN="test-platform.example")
 class InternalUiTests(TestCase):
     def setUp(self):
@@ -92,6 +155,11 @@ class InternalUiTests(TestCase):
             legal_name="Existing Demo CPG, Inc.",
             billing_contact_email="billing@existing-demo.example",
         )
+        link = TcbManufacturerLink.objects.create(
+            tenant=tenant, manufacturer_email_domain="existing-demo.example",
+            brand_id="saved-brand", connection_status="authorized", verified_at=timezone.now(),
+        )
+        verified_at = link.verified_at
         self.client.login(email=self.operator.email, password="test-pass-123")
 
         response = self.client.post(
@@ -117,6 +185,10 @@ class InternalUiTests(TestCase):
 
         self.assertEqual(offer.status, Offer.Status.LOCKED)
         self.assertEqual(offer.title, "Save $3 on Demo Chips")
+        self.assertEqual(offer.tcb_manufacturer_link_id, link.id)
+        link.refresh_from_db()
+        self.assertEqual(link.brand_id, "saved-brand")
+        self.assertEqual(link.verified_at, verified_at)
         self.assertEqual(offer.tcb_manufacturer_link.manufacturer_email_domain, "existing-demo.example")
         self.assertTrue(OfferChannelConfig.objects.filter(offer=offer, channel=channel).exists())
 
