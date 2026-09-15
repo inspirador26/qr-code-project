@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from tenancy.models import Tenant
+from offers.tokens import generate_public_token
 
 
 class TcbManufacturerLink(models.Model):
@@ -88,6 +89,10 @@ class Offer(models.Model):
         PAPER = "1", "Paper"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    public_token = models.CharField(
+        max_length=12, unique=True, db_index=True, editable=False,
+        default=generate_public_token,
+    )
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name="offers")
     tcb_manufacturer_link = models.ForeignKey(
         TcbManufacturerLink, on_delete=models.RESTRICT, related_name="offers"
