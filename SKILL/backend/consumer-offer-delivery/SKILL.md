@@ -1,11 +1,11 @@
 ---
 name: consumer-offer-delivery
-description: Design for serving individual offers to consumers at scale (hundreds of offers across hundreds of tenants) — the masked/white-label public link, the short opaque offer token, and the currently-missing "is this offer still active" guard before depositing a clip with TCB. Not yet built. Load this before starting the consumer-facing clip landing page work, or touching offers/urls.py, offers/views.py, or tcb_integration.services.issue_and_deposit_clip's guard logic.
+description: Consumer offer delivery plan and implemented A2 clip eligibility guard. Load before consumer-facing clip work or changes to public offer routing and issue_and_deposit_clip eligibility.
 ---
 
 # Consumer offer delivery: masked links, active-check gap, scale
 
-**Status: design only, nothing in this doc is built yet.** This is the
+**Status on this branch: A2 implemented; A1 and A3–A4 are not present here.** This is the
 detailed design behind the "consumer-facing clip landing page" item in
 `SKILL/backend/DOSSIER.md` §7, written up for discussion before
 implementation starts. It supersedes the two-token idea from the now-
@@ -28,11 +28,9 @@ Two requirements drove this design:
    invisibly in the background. Decided direction: a neutral shared domain
    by default for every tenant, with an optional per-tenant custom domain
    (CNAME white-label) for clients who want their own domain on the link.
-2. **A confirmed, real gap**: `issue_and_deposit_clip`
-   (`backend/tcb_integration/services.py:102`) has zero guard today
-   checking whether an offer is still active before depositing — it'll
-   happily attempt a deposit for a `PAUSED`/`EXPIRED`/`VOID` offer, or one
-   outside its campaign window, or one that's already hit `max_clips`.
+2. **A2 closes the active-check gap**: `issue_and_deposit_clip` now checks
+   active status, campaign dates, and `max_clips` before contacting TCB or
+   creating any clip or sync-log rows.
 
 Given no real tenants or TCB credentials exist yet, this is **phased**:
 **Phase A** is scoped to land as part of the current MVP milestone
@@ -71,7 +69,8 @@ real `Offer` rows exist anywhere yet).
 
 ### A2. Fix the active-check gap
 
-New `backend/offers/exceptions.py`:
+Implemented in `backend/offers/exceptions.py` (exception strings default
+to their class's `user_message`):
 ```python
 class OfferNotClippable(Exception):
     user_message = "This offer isn't available right now."
@@ -85,28 +84,28 @@ class OfferWindowClosed(OfferNotClippable):
 class OfferSoldOut(OfferNotClippable):
     user_message = "This offer has reached its clip limit."
 ```
-New `backend/offers/services.py`:
+Implemented in `backend/offers/services.py` (raise each exception with no arguments):
 ```python
 def ensure_offer_clippable(offer: Offer) -> None:
     if offer.status != Offer.Status.ACTIVE:
-        raise OfferNotClippable(...)
+        raise OfferNotClippable()
     now = timezone.now()
     if now < offer.campaign_start_at:
-        raise OfferWindowNotStarted(...)
+        raise OfferWindowNotStarted()
     if now > offer.campaign_end_at:
-        raise OfferWindowClosed(...)
+        raise OfferWindowClosed()
     issued = CouponClip.objects.filter(offer=offer).exclude(
         state=CouponClip.State.VOID
     ).count()
     if issued >= offer.max_clips:
-        raise OfferSoldOut(...)
+        raise OfferSoldOut()
 ```
 Gate on `campaign_start_at`/`campaign_end_at`, not the redemption window —
 campaign dates govern whether a consumer can obtain a clip *right now*;
 redemption dates govern whether an already-issued clip is later accepted
 at POS, which is TCB's concern at scan time, not ours at clip time.
 
-**Call this as the first line of `tcb_integration.services.issue_and_deposit_clip`**,
+**Called as the first executable line of `tcb_integration.services.issue_and_deposit_clip`**,
 not only from the view — that protects every current and future caller
 (view, future API endpoint, management command), matching this codebase's
 existing policy of never bypassing the service layer. No circular-import
@@ -124,7 +123,21 @@ set → deposit to TCB" chain is **already implemented** —
 avoids our own collision handling), and the `CouponClip` table *is* the
 active-pincode set, scoped by the `offer` FK with a unique constraint on
 `serialized_gs1` that already guarantees no pincode is issued twice for an
-offer. No redesign needed there — only the missing guard above.
+offer. No redesign needed there — A2 adds the guard above.
+
+Campaign endpoints are inclusive. All non-VOID clip states count, including
+ISSUED failures, pending deposits, redeemed, and expired clips. Other offers'
+clips do not count. A zero limit rejects even the first attempt.
+
+Registration and `seed_demo_offer` still leave the offer LOCKED; explicitly
+set it ACTIVE (for example through Django admin) before clipping. A2 does
+not introduce automatic activation. Callers must supply a current Offer
+instance; this guard does not refresh or lock it against concurrent edits.
+
+Tests in `tcb_integration/tests.py` cover every non-active status, window
+boundaries, redemption-window independence, clip states and limits, offer
+scoping, distinct successful serials, and rejection without TCB or DB writes.
+Friendly HTTP error rendering remains part of A3's future clip view.
 
 ### A3. Neutral masked domain serving the whole consumer flow
 

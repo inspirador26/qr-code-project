@@ -66,6 +66,11 @@ so every call is uniformly logged to `TcbSyncLog`/`TcbSyncLogClip`:
   don't — avoids our own collision handling). Raises `TcbApiError` on any
   non-`newly_added` outcome; **the clip row still exists** in `ISSUED` state
   either way — never silently lost.
+  First calls `offers.services.ensure_offer_clippable`: rejects non-ACTIVE
+  offers, requests outside the inclusive campaign window, and exhausted
+  non-VOID clip counts via `OfferNotClippable` subclasses. Eligibility
+  rejection creates no clip/log and does not initialize the TCB client.
+  Future views must catch these separately from `TcbApiError`.
 - `pull_and_reconcile_redemptions()` — paginated audit pull →
   `RedemptionEvent` creation → `CouponClip.state` update. Idempotent
   (`get_or_create` on `RedemptionEvent`).
@@ -208,6 +213,9 @@ check, `coupons/urls.py` only routes `""`):
    The command intentionally refuses real TCB by default; keep using
    `TCB_USE_MOCK=True` for demo seeding unless a real smoke test is
    explicitly intended.
+   Registration leaves local status LOCKED. Explicitly set the offer to
+   ACTIVE before clipping (Django admin or the calling demo script); A2
+   deliberately does not make registration automatically activate offers.
 2. **QR generator** — add `qrcode` to `requirements.txt`; new small module
    (e.g. `offers/qr.py`) that builds the absolute URL to the offer landing
    page and returns a PNG. Distinct from `gs1/barcode.py`, which encodes the

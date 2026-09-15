@@ -68,6 +68,9 @@ not something being incrementally migrated.
 ## 5. Current state
 
 **Live / built and tested:**
+- A2 clip eligibility guard in `offers.services`: active status, inclusive
+  campaign dates, and non-VOID clip count checked before any TCB client or
+  clip/log creation in `issue_and_deposit_clip`.
 - Full data model, migrated cleanly against Postgres.
 - GS1 AI(8112) encoding/parsing + barcode rendering.
 - Google Wallet save flow.
@@ -91,6 +94,12 @@ not something being incrementally migrated.
 
 ## 6. Known issues
 
+- Clip-limit counting is not locked: concurrent requests can pass together.
+  TCB's `total_circulation` remains the hard cap (which may exceed `max_clips`).
+  Callers must pass a current Offer instance; concurrent status edits are
+  not serialized. This is the accepted A2 scope, not strict reservation.
+- Registration/demo seeding leaves offers LOCKED. Explicitly activate an
+  offer before clipping; only ACTIVE offers pass the new guard.
 - Offer intake uses the mock TCB lifecycle locally. Registration runs
   outside an atomic transaction so failure logs survive; a failed request
   can leave local intake rows behind for diagnosis/retry.
@@ -124,6 +133,7 @@ not something being incrementally migrated.
   centerpiece and needed the foundation pieces done first — see
   `SKILL/backend/tcb-integration/SKILL.md`'s "Current milestone"
   section and `SKILL/backend/consumer-offer-delivery/SKILL.md`.
+  A2 is implemented on this branch; consumer HTTP error rendering remains A3.
 - Celery-driven async outbox worker — `issue_and_deposit_clip` deposits
   synchronously today; fine for exercising the framework, not the final
   design.
@@ -132,10 +142,11 @@ not something being incrementally migrated.
 ## 8. Feature plans and ideas
 
 - Design for masked/white-label consumer offer links (neutral shared
-  domain now, per-tenant custom domain later) and fixing the missing
+  domain now, per-tenant custom domain later) and the implemented
   "is this offer still active" guard before a TCB deposit — see
-  `SKILL/backend/consumer-offer-delivery/SKILL.md`. Design only,
-  not built yet.
+  `SKILL/backend/consumer-offer-delivery/SKILL.md`. A2 is built here;
+  A1 public tokens are separate work not present on this branch, and
+  A3–A4 public flow/link building and Phase B domains remain planned.
 - Internal offer intake currently creates partner-managed digital GS1 8112
   offers with fixed expiration. Client-managed intake, paper coupons, and
   rolling-expiration controls are deferred; model choices alone do not

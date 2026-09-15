@@ -8,6 +8,32 @@ belongs here vs. on an individual skill doc. Newest on top.
 
 ---
 
+## 2026-09-15 — Clip eligibility is enforced before any TCB or persistence side effects
+
+**Requested as**: "implement A2 ('Prevent inactive offers from being clipped')".
+
+**Decision/finding**: `issue_and_deposit_clip` first calls
+`offers.services.ensure_offer_clippable`. Only ACTIVE offers inside their
+inclusive campaign window with room below `max_clips` pass. Every non-VOID
+clip counts, including failed ISSUED attempts. Rejections raise typed
+`OfferNotClippable` exceptions with friendly messages and leave no clip or
+TCB log. Once eligibility passes, existing TCB failure logging remains
+non-atomic and survives errors.
+
+**Why it matters beyond one feature**: every future view, API or command
+calling the issuance service gets the same rules. LOCKED describes
+registration, not permission to distribute; registration and demo seeding
+remain LOCKED and require explicit activation. Redemption dates remain
+TCB's responsibility at POS.
+
+**How to apply**: pass a current Offer instance and catch `OfferNotClippable`
+separately from `TcbApiError`. Do not wrap issuance in `transaction.atomic`.
+As accepted in A2, counting and status checks are not concurrency-locked;
+TCB enforces total circulation, not necessarily our lower `max_clips` cap.
+A3 will add consumer HTTP handling. A1 is independent and not in this branch.
+
+---
+
 ## 2026-09-13 — Consumer offer links serve the whole flow from the masked domain; no redirect hop
 
 **Requested as**: "ideally this is a masked tiny url style url that allow[s]

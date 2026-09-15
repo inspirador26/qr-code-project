@@ -17,6 +17,7 @@ from django.utils.dateparse import parse_datetime
 
 from coupons.models import CouponClip
 from offers.models import Offer
+from offers.services import ensure_offer_clippable
 
 from .client import get_tcb_client
 from .exceptions import TcbApiError
@@ -107,12 +108,16 @@ def issue_and_deposit_clip(offer: Offer, distribution_channel, *, created_via=No
     in the newly_added bucket (the clip row still exists, in ISSUED state,
     for a human/retry-worker to investigate — never silently lost).
 
+    Raises OfferNotClippable before any client or database writes when the
+    offer is inactive, outside its campaign window, or at its clip limit.
+
     Deliberately NOT wrapped in @transaction.atomic: the whole point of
     logging a failure to TcbSyncLog/CouponClip is that it survives the
     exception this function raises on a non-newly_added outcome. Wrapping
     this in one atomic block would roll back that exact record on the
     exact path it exists to capture.
     """
+    ensure_offer_clippable(offer)
     client = get_tcb_client()
 
     clip = CouponClip.objects.create(

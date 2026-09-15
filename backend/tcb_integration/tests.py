@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -6,6 +7,10 @@ from django.utils import timezone
 from coupons.models import CouponClip
 from gs1.data_string import build_base_data_string
 from offers.models import DistributionChannel, Offer, TcbManufacturerLink
+from offers.exceptions import (
+    OfferNotClippable, OfferSoldOut, OfferWindowClosed, OfferWindowNotStarted,
+)
+from offers.services import ensure_offer_clippable
 from reporting.models import RedemptionEvent
 from tenancy.models import Tenant
 
@@ -33,17 +38,17 @@ class TcbFrameworkTests(TestCase):
             code="gs1_8112_barcode", defaults={"display_name": "GS1 8112 Barcode"}
         )
 
-    def _make_offer(self, *, total_circulation=10, ownership_mode=None):
+    def _make_offer(self, *, total_circulation=10, ownership_mode=None, offer_code="000001"):
         now = timezone.now()
         base_gs1 = build_base_data_string(
-            coupon_format="0", funder_id="123456789012", offer_code="000001"
+            coupon_format="0", funder_id="123456789012", offer_code=offer_code
         )
         return Offer.objects.create(
             tenant=self.tenant,
             tcb_manufacturer_link=self.link,
             ownership_mode=ownership_mode or Offer.OwnershipMode.PARTNER_MANAGED,
             coupon_funder_id="123456789012",
-            offer_code="000001",
+            offer_code=offer_code,
             base_gs1=base_gs1,
             title="Save $1 on Acme Sauce",
             campaign_start_at=now,
@@ -57,12 +62,17 @@ class TcbFrameworkTests(TestCase):
     def test_get_tcb_client_returns_mock_by_default(self):
         self.assertIsInstance(get_tcb_client(), MockTcbClient)
 
+    def _activate(self, offer):
+        offer.status = Offer.Status.ACTIVE
+        offer.save(update_fields=["status", "updated_at"])
+
     def test_full_happy_path_register_deposit_redeem_reconcile(self):
         offer = self._make_offer()
 
         register_and_lock_offer(offer)
         offer.refresh_from_db()
         self.assertEqual(offer.status, Offer.Status.LOCKED)
+        self._activate(offer)
 
         clip = issue_and_deposit_clip(offer, self.channel)
         self.assertEqual(clip.state, CouponClip.State.DEPOSITED)
@@ -88,6 +98,7 @@ class TcbFrameworkTests(TestCase):
 
     def test_deposit_fails_cleanly_when_offer_never_registered(self):
         offer = self._make_offer()
+        self._activate(offer)
         # Deliberately skip register_and_lock_offer — the MOF doesn't exist
         # in TCB at all yet, distinct from "exists but not locked" below.
         with self.assertRaises(TcbApiError):
@@ -99,6 +110,7 @@ class TcbFrameworkTests(TestCase):
 
     def test_deposit_fails_cleanly_when_offer_registered_but_not_locked(self):
         offer = self._make_offer()
+        self._activate(offer)
         client = get_tcb_client()
         # Register the MOF directly via the client (bypassing
         # register_and_lock_offer, which always locks) so it exists but
@@ -127,9 +139,13 @@ class TcbFrameworkTests(TestCase):
     def test_deposit_fails_when_circulation_exhausted(self):
         offer = self._make_offer(total_circulation=1)
         register_and_lock_offer(offer)
+        self._activate(offer)
 
         first = issue_and_deposit_clip(offer, self.channel)
         self.assertEqual(first.state, CouponClip.State.DEPOSITED)
+
+        # Simulate external depletion: the local count has room, TCB does not.
+        first.delete()
 
         with self.assertRaises(TcbApiError):
             issue_and_deposit_clip(offer, self.channel)
@@ -146,6 +162,7 @@ class TcbFrameworkTests(TestCase):
         client = get_tcb_client()
         offer = self._make_offer()
         register_and_lock_offer(offer)  # registers + assigns us as provider
+        self._activate(offer)
 
         # Toggling again should unassign, per TCB's real documented behavior.
         resp = client.assign_provider(
@@ -160,3 +177,83 @@ class TcbFrameworkTests(TestCase):
             issue_and_deposit_clip(offer, self.channel)
         clip = CouponClip.objects.filter(offer=offer).latest("issued_at")
         self.assertEqual(clip.tcb_deposit_status, "not_owned_by_you")
+
+    def assert_clip_rejected(self, offer, exception):
+        clips_before = CouponClip.objects.count()
+        logs_before = TcbSyncLog.objects.count()
+        with patch("tcb_integration.services.get_tcb_client") as client:
+            with self.assertRaises(exception) as caught:
+                issue_and_deposit_clip(offer, self.channel)
+            self.assertEqual(str(caught.exception), exception.user_message)
+            client.assert_not_called()
+        self.assertEqual(CouponClip.objects.count(), clips_before)
+        self.assertEqual(TcbSyncLog.objects.count(), logs_before)
+
+    def test_every_non_active_status_rejected_without_side_effects(self):
+        offer = self._make_offer()
+        for status in Offer.Status.values:
+            if status != Offer.Status.ACTIVE:
+                with self.subTest(status=status):
+                    offer.status = status
+                    self.assert_clip_rejected(offer, OfferNotClippable)
+
+    def test_campaign_window_rejections_and_inclusive_boundaries(self):
+        offer = self._make_offer()
+        self._activate(offer)
+        for now, error in (
+            (offer.campaign_start_at - timedelta(microseconds=1), OfferWindowNotStarted),
+            (offer.campaign_end_at + timedelta(microseconds=1), OfferWindowClosed),
+        ):
+            with self.subTest(now=now), patch("offers.services.timezone.now", return_value=now):
+                self.assert_clip_rejected(offer, error)
+        for now in (offer.campaign_start_at, offer.campaign_end_at):
+            with self.subTest(now=now), patch("offers.services.timezone.now", return_value=now):
+                ensure_offer_clippable(offer)
+
+    def test_redemption_window_does_not_gate_clipping(self):
+        offer = self._make_offer()
+        self._activate(offer)
+        for days in (-10, 10):
+            with self.subTest(days=days):
+                offer.redemption_start_at = timezone.now() + timedelta(days=days)
+                offer.redemption_end_at = offer.redemption_start_at + timedelta(days=1)
+                ensure_offer_clippable(offer)
+
+    def test_all_non_void_clip_states_count_toward_limit(self):
+        offer = self._make_offer(total_circulation=1)
+        self._activate(offer)
+        clip = CouponClip.objects.create(
+            offer=offer, tenant=self.tenant, distribution_channel=self.channel,
+        )
+        for state in CouponClip.State.values:
+            clip.state = state
+            clip.save(update_fields=["state"])
+            with self.subTest(state=state):
+                if state == CouponClip.State.VOID:
+                    ensure_offer_clippable(offer)
+                else:
+                    self.assert_clip_rejected(offer, OfferSoldOut)
+
+    def test_zero_limit_rejects_first_clip(self):
+        offer = self._make_offer(total_circulation=0)
+        self._activate(offer)
+        self.assert_clip_rejected(offer, OfferSoldOut)
+
+    def test_clips_for_other_offer_do_not_count(self):
+        offer = self._make_offer(total_circulation=1)
+        self._activate(offer)
+        other = self._make_offer(offer_code="000002")
+        CouponClip.objects.create(
+            offer=other, tenant=self.tenant, distribution_channel=self.channel,
+        )
+        ensure_offer_clippable(offer)
+
+    def test_successful_clips_have_distinct_serials_then_limit_blocks(self):
+        offer = self._make_offer(total_circulation=2)
+        register_and_lock_offer(offer)
+        self._activate(offer)
+        first = issue_and_deposit_clip(offer, self.channel)
+        second = issue_and_deposit_clip(offer, self.channel)
+        self.assertEqual(second.state, CouponClip.State.DEPOSITED)
+        self.assertNotEqual(first.serialized_gs1, second.serialized_gs1)
+        self.assert_clip_rejected(offer, OfferSoldOut)
